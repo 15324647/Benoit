@@ -4,128 +4,248 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>❄️ Benoît — Research Collaborator</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
   <style>
     :root {
-      --bg: #f5f4f0;
+      --bg: #f9f9f7;
       --surface: #ffffff;
-      --surface2: #eef2f5;
-      --border: #d0d8e0;
+      --surface2: #f0f2f5;
+      --border: #d4d9e0;
       --accent: #1a6b96;
       --accent2: #0f4a6e;
-      --text: #111318;
-      --text2: #2a3040;
-      --text3: #6a7080;
-      --benoit: #1a6b96;
+      --text: #1a1a1a;
+      --text2: #2d2d2d;
+      --text3: #6b7280;
       --user: #1a6b3a;
       --fractal: #145a7a;
-      --sidebar: #f0f2f5;
-      --sidebar-border: #dde3e8;
+      --sidebar: #f4f5f7;
+      --sidebar-border: #e0e4e8;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: var(--bg); color: var(--text); font-family: 'EB Garamond', Georgia, serif; font-size: 19px; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
-    header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; gap: 14px; flex-shrink: 0; z-index: 10; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-    .avatar { width: 44px; height: 44px; background: linear-gradient(135deg, var(--fractal), var(--accent)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
-    .header-info h1 { font-size: 20px; font-weight: 600; color: var(--accent2); }
-    .header-info p { font-size: 13px; color: var(--text3); font-family: 'Crimson Pro', serif; font-style: italic; }
-    .header-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
-    .home-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 7px 16px; cursor: pointer; font-family: 'EB Garamond', serif; font-size: 16px; color: var(--text2); transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 16px;
+      line-height: 1.7;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* HEADER */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 11px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+      z-index: 10;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .avatar {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, var(--fractal), var(--accent));
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; flex-shrink: 0;
+    }
+    .header-info h1 { font-size: 17px; font-weight: 600; color: var(--accent2); letter-spacing: -0.01em; }
+    .header-info p { font-size: 12px; color: var(--text3); }
+    .header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .home-btn {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 7px; padding: 6px 14px; cursor: pointer;
+      font-size: 14px; color: var(--text2); transition: all 0.2s;
+    }
     .home-btn:hover { border-color: var(--accent); color: var(--accent); background: #e8f2f8; }
-    .status { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--text3); font-family: 'JetBrains Mono', monospace; }
-    .status-dot { width: 7px; height: 7px; background: #2a9a5a; border-radius: 50%; animation: pulse 2s infinite; }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text3); }
+    .status-dot { width: 7px; height: 7px; background: #22c55e; border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    /* LAYOUT */
     .main-layout { display: flex; flex: 1; overflow: hidden; }
-    .sidebar-left { width: 220px; flex-shrink: 0; background: var(--sidebar); border-right: 1px solid var(--sidebar-border); display: flex; flex-direction: column; overflow-y: auto; padding: 20px 14px; gap: 4px; }
-    .sidebar-section-title { font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; padding: 8px 4px 4px; margin-top: 8px; }
+
+    /* LEFT SIDEBAR */
+    .sidebar-left {
+      width: 200px; flex-shrink: 0;
+      background: var(--sidebar); border-right: 1px solid var(--sidebar-border);
+      display: flex; flex-direction: column;
+      overflow-y: auto; padding: 16px 10px; gap: 2px;
+    }
+    .sidebar-section-title {
+      font-size: 10px; font-weight: 600; color: var(--text3);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      padding: 8px 6px 4px; margin-top: 6px;
+    }
     .sidebar-section-title:first-child { margin-top: 0; }
-    .sidebar-btn { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; cursor: pointer; border: 1px solid transparent; background: transparent; transition: all 0.18s; font-family: 'EB Garamond', serif; font-size: 16px; color: var(--text2); text-align: left; width: 100%; }
-    .sidebar-btn:hover { background: #e8f2f8; border-color: var(--accent); color: var(--accent2); }
-    .sb-icon { font-size: 18px; flex-shrink: 0; }
-    .sb-label { font-weight: 600; color: var(--text); display: block; font-size: 15px; }
-    .sb-desc { font-size: 12px; color: var(--text3); font-style: italic; display: block; }
-    .sidebar-divider { height: 1px; background: var(--sidebar-border); margin: 8px 0; }
-    .chat-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
-    #messages { flex: 1; overflow-y: auto; padding: 28px 20px; scroll-behavior: smooth; }
+    .sidebar-btn {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px; border-radius: 8px; cursor: pointer;
+      border: 1px solid transparent; background: transparent;
+      transition: all 0.15s; font-size: 14px; color: var(--text2);
+      text-align: left; width: 100%;
+    }
+    .sidebar-btn:hover { background: #e8f2f8; border-color: rgba(26,107,150,0.3); color: var(--accent2); }
+    .sb-icon { font-size: 16px; flex-shrink: 0; }
+    .sb-label { font-weight: 600; color: var(--text); display: block; font-size: 13px; }
+    .sb-desc { font-size: 11px; color: var(--text3); display: block; }
+    .sidebar-divider { height: 1px; background: var(--sidebar-border); margin: 6px 0; }
+
+    /* CHAT AREA */
+    .chat-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+    #messages { flex: 1; overflow-y: auto; padding: 24px 32px; scroll-behavior: smooth; }
     #messages::-webkit-scrollbar { width: 4px; }
     #messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-    .message-wrapper { max-width: 780px; margin: 0 auto 24px; animation: fadeIn 0.25s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-    .message-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-    .msg-avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+
+    .message-wrapper { max-width: 1100px; margin: 0 auto 20px; animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
+
+    .message-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .msg-avatar { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
     .msg-avatar.benoit { background: linear-gradient(135deg, var(--fractal), var(--accent)); }
     .msg-avatar.user { background: linear-gradient(135deg, #0f4a2a, var(--user)); }
-    .msg-name { font-size: 14px; font-weight: 600; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.04em; }
+    .msg-name { font-size: 13px; font-weight: 600; color: var(--text2); }
     .msg-name.benoit { color: var(--accent2); }
     .msg-name.user { color: var(--user); }
-    .msg-time { font-size: 12px; color: var(--text3); font-family: 'JetBrains Mono', monospace; margin-left: auto; }
-    .message-content { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 24px; line-height: 1.8; color: var(--text); font-size: 19px; }
-    .message-wrapper.user .message-content { background: #f0f8f2; border-color: rgba(26,107,58,0.2); color: var(--text); }
-    .message-wrapper.benoit .message-content { border-color: rgba(26,107,150,0.2); color: var(--text); }
-    .message-content strong { color: var(--text); }
+    .msg-time { font-size: 11px; color: var(--text3); margin-left: auto; }
+
+    .message-content {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px 20px;
+      line-height: 1.75; color: var(--text); font-size: 15.5px;
+    }
+    .message-wrapper.user .message-content { background: #f0f8f2; border-color: rgba(26,107,58,0.2); }
+    .message-wrapper.benoit .message-content { border-color: rgba(26,107,150,0.15); }
+    .message-content strong { color: var(--text); font-weight: 600; }
+    .message-content em { color: var(--text2); }
     .message-content .katex { color: var(--accent2); }
-    .message-content .katex-display { margin: 16px 0; overflow-x: auto; }
-    .message-content pre { background: #eef2f6; border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin: 14px 0; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 14px; line-height: 1.6; color: var(--text); }
-    .message-content code { font-family: 'JetBrains Mono', monospace; font-size: 14px; background: rgba(26,107,150,0.08); padding: 2px 6px; border-radius: 4px; color: var(--accent2); }
+    .message-content .katex-display { margin: 14px 0; overflow-x: auto; }
+    .message-content pre { background: #f4f6f8; border: 1px solid var(--border); border-radius: 7px; padding: 14px; margin: 12px 0; overflow-x: auto; font-family: ui-monospace, monospace; font-size: 13px; line-height: 1.55; color: var(--text); }
+    .message-content code { font-family: ui-monospace, monospace; font-size: 13px; background: rgba(26,107,150,0.07); padding: 1px 5px; border-radius: 3px; color: var(--accent2); }
     .message-content pre code { background: none; padding: 0; color: var(--text); }
-    .typing-indicator { display: flex; gap: 5px; padding: 16px 22px; background: var(--surface); border: 1px solid rgba(26,107,150,0.2); border-radius: 12px; width: fit-content; }
-    .typing-dot { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; animation: typing 1.2s infinite; }
-    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
-    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes typing { 0%, 60%, 100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-6px); opacity: 1; } }
-    .chat-input { background: var(--surface); border-top: 1px solid var(--border); padding: 14px 20px; flex-shrink: 0; }
-    .input-container { max-width: 780px; margin: 0 auto; display: flex; gap: 10px; align-items: flex-end; }
-    textarea { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 13px 18px; color: var(--text); font-family: 'EB Garamond', serif; font-size: 18px; line-height: 1.6; resize: none; min-height: 50px; max-height: 180px; outline: none; transition: border-color 0.2s; }
+    .message-content h1,.message-content h2,.message-content h3 { color: var(--text); margin: 16px 0 8px; font-weight: 600; }
+    .message-content h1 { font-size: 20px; }
+    .message-content h2 { font-size: 17px; }
+    .message-content h3 { font-size: 15px; }
+    .message-content p { margin-bottom: 10px; }
+    .message-content ul, .message-content ol { margin: 8px 0 8px 20px; }
+    .message-content li { margin-bottom: 4px; }
+
+    /* Article action buttons */
+    .article-actions {
+      display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap;
+    }
+    .action-btn {
+      padding: 7px 14px; border-radius: 7px; border: 1px solid var(--border);
+      cursor: pointer; font-size: 13px; font-weight: 500;
+      transition: all 0.2s; display: flex; align-items: center; gap: 6px;
+      background: var(--surface2); color: var(--text2);
+    }
+    .action-btn:hover { border-color: var(--accent); color: var(--accent); background: #e8f2f8; }
+    .action-btn.primary { background: var(--accent); color: white; border-color: var(--accent); }
+    .action-btn.primary:hover { background: var(--accent2); border-color: var(--accent2); color: white; }
+
+    /* Readable article view */
+    .article-readable {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 28px 32px; margin-top: 12px;
+      color: var(--text); font-size: 15.5px; line-height: 1.8;
+    }
+    .article-readable h1 { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 8px; text-align: center; }
+    .article-readable .authors { text-align: center; color: var(--text3); font-size: 14px; margin-bottom: 20px; }
+    .article-readable h2 { font-size: 16px; font-weight: 700; color: var(--text); margin: 20px 0 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .article-readable p { margin-bottom: 12px; }
+    .article-readable .abstract { background: var(--surface2); border-left: 3px solid var(--accent); padding: 14px 16px; border-radius: 0 6px 6px 0; margin-bottom: 20px; font-style: italic; }
+
+    /* Typing indicator */
+    .typing-indicator { display: flex; gap: 5px; padding: 14px 18px; background: var(--surface); border: 1px solid rgba(26,107,150,0.15); border-radius: 10px; width: fit-content; }
+    .typing-dot { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; animation: typing 1.2s infinite; }
+    .typing-dot:nth-child(2){animation-delay:.2s} .typing-dot:nth-child(3){animation-delay:.4s}
+    @keyframes typing { 0%,60%,100%{transform:translateY(0);opacity:0.4} 30%{transform:translateY(-5px);opacity:1} }
+
+    /* INPUT */
+    .chat-input { background: var(--surface); border-top: 1px solid var(--border); padding: 12px 32px; flex-shrink: 0; }
+    .input-container { max-width: 1100px; margin: 0 auto; display: flex; gap: 8px; align-items: flex-end; }
+    textarea {
+      flex: 1; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 10px; padding: 11px 16px; color: var(--text);
+      font-family: inherit; font-size: 15px; line-height: 1.6;
+      resize: none; min-height: 46px; max-height: 160px; outline: none;
+      transition: border-color 0.2s;
+    }
     textarea:focus { border-color: var(--accent); }
-    textarea::placeholder { color: var(--text3); font-style: italic; }
-    .btn { width: 46px; height: 46px; border-radius: 10px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0; }
-    #sendBtn { background: linear-gradient(135deg, var(--fractal), var(--accent)); color: white; }
-    #sendBtn:hover { transform: scale(1.05); box-shadow: 0 4px 14px rgba(26,107,150,0.35); }
+    textarea::placeholder { color: var(--text3); }
+    .btn { width: 44px; height: 44px; border-radius: 9px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0; }
+    #sendBtn { background: var(--accent); color: white; }
+    #sendBtn:hover { background: var(--accent2); transform: scale(1.03); }
     #sendBtn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
     #voiceBtn { background: var(--surface2); border: 1px solid var(--border); color: var(--text2); }
     #voiceBtn:hover { border-color: var(--accent); color: var(--accent); }
-    #voiceBtn.recording { background: rgba(200,40,40,0.1); border-color: #c82828; color: #c82828; animation: recordPulse 1s infinite; }
-    @keyframes recordPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(200,40,40,0.3); } 50% { box-shadow: 0 0 0 8px rgba(200,40,40,0); } }
-    .input-hint { text-align: center; font-size: 12px; color: var(--text3); font-family: 'JetBrains Mono', monospace; margin-top: 8px; }
-    .sidebar-right { width: 220px; flex-shrink: 0; background: var(--sidebar); border-left: 1px solid var(--sidebar-border); display: flex; flex-direction: column; overflow-y: auto; padding: 20px 14px; }
-    .session-item { padding: 9px 11px; border-radius: 8px; border: 1px solid transparent; margin-bottom: 5px; }
-    .session-item.benoit-log { border-color: rgba(26,107,150,0.15); background: rgba(26,107,150,0.04); }
-    .session-item.user-log { border-color: rgba(26,107,58,0.15); background: rgba(26,107,58,0.04); }
-    .session-item-who { font-size: 11px; font-family: 'JetBrains Mono', monospace; font-weight: 700; margin-bottom: 3px; }
+    #voiceBtn.recording { background: rgba(200,40,40,0.08); border-color: #c82828; color: #c82828; animation: recordPulse 1s infinite; }
+    @keyframes recordPulse { 0%,100%{box-shadow:0 0 0 0 rgba(200,40,40,0.3)} 50%{box-shadow:0 0 0 7px rgba(200,40,40,0)} }
+    .input-hint { text-align: center; font-size: 11px; color: var(--text3); margin-top: 7px; }
+
+    /* RIGHT SIDEBAR */
+    .sidebar-right {
+      width: 200px; flex-shrink: 0;
+      background: var(--sidebar); border-left: 1px solid var(--sidebar-border);
+      display: flex; flex-direction: column; overflow-y: auto; padding: 16px 10px;
+    }
+    .session-item { padding: 8px 10px; border-radius: 7px; border: 1px solid transparent; margin-bottom: 4px; }
+    .session-item.benoit-log { border-color: rgba(26,107,150,0.12); background: rgba(26,107,150,0.03); }
+    .session-item.user-log { border-color: rgba(26,107,58,0.12); background: rgba(26,107,58,0.03); }
+    .session-item-who { font-size: 10px; font-weight: 700; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
     .session-item-who.benoit { color: var(--accent2); }
     .session-item-who.user { color: var(--user); }
-    .session-item-text { font-size: 13px; color: var(--text2); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-    .new-session-btn { width: 100%; padding: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-family: 'EB Garamond', serif; font-size: 16px; color: var(--text2); transition: all 0.2s; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 6px; }
-    .new-session-btn:hover { border-color: var(--accent); color: var(--accent); background: #e8f2f8; }
-    .api-key-btn { width: 100%; padding: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-family: 'EB Garamond', serif; font-size: 15px; color: var(--text3); transition: all 0.2s; margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 6px; }
-    .api-key-btn:hover { color: var(--text2); }
-    .empty-log { font-size: 13px; color: var(--text3); font-style: italic; text-align: center; padding: 16px 8px; }
-    .welcome { max-width: 640px; margin: 30px auto; padding: 0 16px; text-align: center; animation: fadeIn 0.4s ease; }
-    .welcome-icon { font-size: 64px; margin-bottom: 18px; display: block; }
-    .welcome h2 { font-size: 32px; color: var(--text); font-weight: 500; margin-bottom: 10px; }
-    .welcome p { color: var(--text2); font-size: 18px; line-height: 1.7; font-style: italic; margin-bottom: 32px; }
-    .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; text-align: left; }
-    .mode-card { background: var(--surface); border: 2px solid var(--border); border-radius: 14px; padding: 22px 18px; cursor: pointer; transition: all 0.2s; }
-    .mode-card:hover { border-color: var(--accent); background: #e8f2f8; transform: translateY(-2px); box-shadow: 0 4px 16px rgba(26,107,150,0.12); }
-    .mode-card .mode-icon { font-size: 34px; margin-bottom: 10px; display: block; }
-    .mode-card .mode-title { font-size: 21px; color: var(--text); font-weight: 600; margin-bottom: 5px; }
-    .mode-card .mode-desc { font-size: 15px; color: var(--text2); font-style: italic; }
-    .modal-overlay { position: fixed; inset: 0; background: rgba(180,190,200,0.65); z-index: 100; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
-    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 36px; max-width: 480px; width: 90%; animation: fadeIn 0.25s ease; box-shadow: 0 12px 48px rgba(0,0,0,0.12); }
-    .modal h2 { font-size: 24px; color: var(--text); margin-bottom: 10px; font-weight: 500; }
-    .modal p { color: var(--text2); font-size: 16px; margin-bottom: 22px; line-height: 1.6; font-style: italic; }
-    .modal input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 13px 16px; color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 14px; outline: none; margin-bottom: 16px; transition: border-color 0.2s; }
+    .session-item-text { font-size: 12px; color: var(--text2); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+    .empty-log { font-size: 12px; color: var(--text3); font-style: italic; text-align: center; padding: 14px 6px; }
+    .sidebar-action-btn { width: 100%; padding: 9px; background: var(--surface); border: 1px solid var(--border); border-radius: 7px; cursor: pointer; font-size: 13px; color: var(--text2); transition: all 0.2s; margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 5px; }
+    .sidebar-action-btn:hover { border-color: var(--accent); color: var(--accent); background: #e8f2f8; }
+
+    /* WELCOME */
+    .welcome { max-width: 680px; margin: 28px auto; padding: 0 16px; text-align: center; animation: fadeIn 0.4s ease; }
+    .welcome-icon { font-size: 56px; margin-bottom: 14px; display: block; }
+    .welcome h2 { font-size: 26px; color: var(--text); font-weight: 700; margin-bottom: 8px; letter-spacing: -0.02em; }
+    .welcome p { color: var(--text2); font-size: 16px; line-height: 1.6; margin-bottom: 28px; }
+    .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; text-align: left; }
+    .mode-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px; padding: 18px 16px; cursor: pointer; transition: all 0.2s; }
+    .mode-card:hover { border-color: var(--accent); background: #e8f2f8; transform: translateY(-2px); box-shadow: 0 4px 14px rgba(26,107,150,0.1); }
+    .mode-card .mode-icon { font-size: 28px; margin-bottom: 8px; display: block; }
+    .mode-card .mode-title { font-size: 17px; color: var(--text); font-weight: 700; margin-bottom: 4px; }
+    .mode-card .mode-desc { font-size: 13px; color: var(--text3); }
+
+    /* MODAL */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 100; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
+    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 32px; max-width: 440px; width: 90%; box-shadow: 0 8px 40px rgba(0,0,0,0.12); animation: fadeIn 0.2s ease; }
+    .modal h2 { font-size: 20px; color: var(--text); margin-bottom: 8px; font-weight: 700; }
+    .modal p { color: var(--text2); font-size: 14px; margin-bottom: 20px; line-height: 1.6; }
+    .modal input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 11px 14px; color: var(--text); font-family: ui-monospace, monospace; font-size: 13px; outline: none; margin-bottom: 14px; transition: border-color 0.2s; }
     .modal input:focus { border-color: var(--accent); }
-    .modal-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, var(--fractal), var(--accent)); border: none; border-radius: 10px; color: white; font-family: 'EB Garamond', serif; font-size: 18px; cursor: pointer; transition: all 0.2s; }
-    .modal-btn:hover { opacity: 0.9; transform: translateY(-1px); }
-    .modal-note { font-size: 12px; color: var(--text3); text-align: center; margin-top: 12px; font-family: 'JetBrains Mono', monospace; }
+    .modal-btn { width: 100%; padding: 12px; background: var(--accent); border: none; border-radius: 8px; color: white; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .modal-btn:hover { background: var(--accent2); }
+    .modal-note { font-size: 11px; color: var(--text3); text-align: center; margin-top: 10px; }
+
+    /* Print styles for PDF */
+    @media print {
+      header, .sidebar-left, .sidebar-right, .chat-input, .modal-overlay, .message-wrapper.user, .article-actions { display: none !important; }
+      .main-layout { display: block; }
+      .chat-area { overflow: visible; }
+      #messages { overflow: visible; padding: 0; }
+      .article-readable { border: none; padding: 0; box-shadow: none; }
+    }
+
+    /* Scrollbars */
     .sidebar-left::-webkit-scrollbar, .sidebar-right::-webkit-scrollbar { width: 3px; }
     .sidebar-left::-webkit-scrollbar-thumb, .sidebar-right::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-    @media (max-width: 900px) { .sidebar-left { width: 180px; } .sidebar-right { display: none; } }
-    @media (max-width: 640px) { .sidebar-left { display: none; } .modes { grid-template-columns: 1fr; } }
+
+    @media (max-width: 900px) { .sidebar-left { width: 170px; } .sidebar-right { display: none; } }
+    @media (max-width: 640px) { .sidebar-left { display: none; } .modes { grid-template-columns: 1fr; } #messages { padding: 16px; } .chat-input { padding: 10px 16px; } }
   </style>
 </head>
 <body>
@@ -133,7 +253,7 @@
   <div class="modal-overlay" id="apiModal">
     <div class="modal">
       <h2>❄️ Benvenuto in Benoît</h2>
-      <p>Inserisci la tua API Key di Anthropic per iniziare la sessione di ricerca.</p>
+      <p>Inserisci la tua API Key di Anthropic per iniziare la sessione di ricerca con la Prof.ssa Lancia.</p>
       <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." autocomplete="off" />
       <button class="modal-btn" onclick="saveApiKey()">Inizia la sessione</button>
       <p class="modal-note">🔒 La chiave è salvata solo in questa sessione del browser.</p>
@@ -157,38 +277,30 @@
     <div class="sidebar-left">
       <div class="sidebar-section-title">Modalità</div>
       <button class="sidebar-btn" onclick="quickStart('Benoît, presentati.')">
-        <span class="sb-icon">🤝</span>
-        <span><span class="sb-label">Presentazione</span><span class="sb-desc">Conosci Benoît</span></span>
+        <span class="sb-icon">🤝</span><span><span class="sb-label">Presentazione</span><span class="sb-desc">Conosci Benoît</span></span>
       </button>
       <button class="sidebar-btn" onclick="quickStart('Benoît, vorrei fare una peer review.')">
-        <span class="sb-icon">📝</span>
-        <span><span class="sb-label">Peer Review</span><span class="sb-desc">Valuta un articolo</span></span>
+        <span class="sb-icon">📝</span><span><span class="sb-label">Peer Review</span><span class="sb-desc">Valuta un articolo</span></span>
       </button>
       <button class="sidebar-btn" onclick="quickStart('Benoît, prepara la newsletter.')">
-        <span class="sb-icon">📰</span>
-        <span><span class="sb-label">Newsletter</span><span class="sb-desc">Aggiornamenti campo</span></span>
+        <span class="sb-icon">📰</span><span><span class="sb-label">Newsletter</span><span class="sb-desc">Aggiornamenti campo</span></span>
       </button>
       <button class="sidebar-btn" onclick="quickStart('Benoît, devo preparare delle slide per una conferenza.')">
-        <span class="sb-icon">🎯</span>
-        <span><span class="sb-label">Slide</span><span class="sb-desc">LaTeX Beamer</span></span>
+        <span class="sb-icon">🎯</span><span><span class="sb-label">Slide Beamer</span><span class="sb-desc">LaTeX per conferenze</span></span>
       </button>
       <div class="sidebar-divider"></div>
       <div class="sidebar-section-title">Ricerca</div>
       <button class="sidebar-btn" onclick="quickStart('Benoît, cerca paper recenti su forme di Dirichlet e frattali.')">
-        <span class="sb-icon">🔬</span>
-        <span><span class="sb-label">Letteratura</span><span class="sb-desc">Paper recenti</span></span>
+        <span class="sb-icon">🔬</span><span><span class="sb-label">Letteratura</span><span class="sb-desc">Paper recenti</span></span>
       </button>
       <button class="sidebar-btn" onclick="quickStart('Benoît, suggerisci nuove direzioni di ricerca partendo dai miei lavori pubblicati.')">
-        <span class="sb-icon">💡</span>
-        <span><span class="sb-label">Idee nuove</span><span class="sb-desc">Sviluppi possibili</span></span>
+        <span class="sb-icon">💡</span><span><span class="sb-label">Idee nuove</span><span class="sb-desc">Sviluppi possibili</span></span>
       </button>
       <button class="sidebar-btn" onclick="quickStart('Benoît, aiutami a scrivere la bozza di un articolo scientifico.')">
-        <span class="sb-icon">✍️</span>
-        <span><span class="sb-label">Articolo</span><span class="sb-desc">Bozza sezioni</span></span>
+        <span class="sb-icon">✍️</span><span><span class="sb-label">Articolo</span><span class="sb-desc">Bozza completa</span></span>
       </button>
       <button class="sidebar-btn" onclick="quickStart('Benoît, dimostra o discuti questo risultato:')">
-        <span class="sb-icon">∂</span>
-        <span><span class="sb-label">Dimostrazione</span><span class="sb-desc">LaTeX formale</span></span>
+        <span class="sb-icon">∂</span><span><span class="sb-label">Dimostrazione</span><span class="sb-desc">LaTeX formale</span></span>
       </button>
     </div>
 
@@ -216,8 +328,8 @@
             </div>
             <div class="mode-card" onclick="quickStart('Benoît, devo preparare delle slide per una conferenza.')">
               <span class="mode-icon">🎯</span>
-              <div class="mode-title">Slide</div>
-              <div class="mode-desc">Presentazioni LaTeX Beamer</div>
+              <div class="mode-title">Slide Beamer</div>
+              <div class="mode-desc">Presentazioni LaTeX per conferenze</div>
             </div>
           </div>
         </div>
@@ -226,7 +338,7 @@
       <div class="chat-input">
         <div class="input-container">
           <button class="btn" id="voiceBtn" onclick="toggleVoice()" title="Voce in italiano">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
               <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
               <line x1="12" y1="19" x2="12" y2="23"/>
@@ -235,23 +347,25 @@
           </button>
           <textarea id="userInput" placeholder="Scrivi a Benoît... (Invio per inviare, Shift+Invio per andare a capo)" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
           <button class="btn" id="sendBtn" onclick="sendMessage()">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="22" y1="2" x2="11" y2="13"/>
               <polygon points="22 2 15 22 11 13 2 9 22 2"/>
             </svg>
           </button>
         </div>
-        <div class="input-hint">🎙️ Microfono per italiano · LaTeX: $f(x)$ oppure $$\int_a^b f\,dx$$</div>
+        <div class="input-hint">🎙️ Microfono per italiano &nbsp;·&nbsp; LaTeX: $f(x)$ oppure $$\int_a^b f\,dx$$</div>
       </div>
     </div>
 
     <div class="sidebar-right">
       <div class="sidebar-section-title">Sessione corrente</div>
       <div id="sessionLog"><div class="empty-log">La conversazione apparirà qui</div></div>
-      <div class="sidebar-divider" style="margin-top:auto;"></div>
-      <div class="sidebar-section-title">Impostazioni</div>
-      <button class="new-session-btn" onclick="goHome()">↺ Nuova sessione</button>
-      <button class="api-key-btn" onclick="document.getElementById('apiModal').style.display='flex'">🔑 Cambia API Key</button>
+      <div style="margin-top:auto;">
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-section-title">Impostazioni</div>
+        <button class="sidebar-action-btn" onclick="goHome()">↺ Nuova sessione</button>
+        <button class="sidebar-action-btn" onclick="document.getElementById('apiModal').style.display='flex'" style="color:var(--text3);font-size:12px;">🔑 Cambia API Key</button>
+      </div>
     </div>
 
   </div>
@@ -308,89 +422,93 @@ The following outputs are always written in English:
 When producing English output, introduce it briefly in Italian first.
 
 ## First interaction
-The very first time you interact with Maria Rosaria in a new conversation, you introduce yourself briefly in Italian: who you are, what you can do for her, and how to activate the different modes (peer review, newsletter, slides). Keep it warm, collegial and concise — not a list of features, but a natural greeting between colleagues.
+The very first time you interact with Maria Rosaria in a new conversation, introduce yourself briefly in Italian. Keep it warm, collegial and concise.
 
 ## Your behavior
-- You are a respectful but proactive collaborator. Maria Rosaria makes the final scientific decisions; you support, enrich, and challenge constructively.
-- Your style is adaptive: concise and direct on well-known results, discursive and step-by-step on new or complex ideas.
-- You naturally signal interesting connections to other results or areas when relevant, without overwhelming the conversation.
+- Respectful but proactive collaborator. Maria Rosaria makes final scientific decisions.
+- Style is adaptive: concise on well-known results, discursive on new ideas.
+- Signal interesting connections naturally without overwhelming.
 
 ## What you can produce
-- Formal proofs and mathematical reasoning, always written in LaTeX
-- Drafts of sections of scientific articles (in English)
-- Search and synthesis of relevant literature from arXiv and other sources
-- Critical analysis of arguments or drafts proposed by Maria Rosaria
+- Formal proofs and mathematical reasoning in LaTeX
+- Drafts of scientific articles (in English) — always produce BOTH a readable version AND the LaTeX code
+- Search and synthesis of relevant literature
+- Critical analysis of arguments or drafts
 - Full peer review reports
 - Monthly newsletter for her research group
-- LaTeX Beamer slide presentations for conferences and seminars
+- LaTeX Beamer slide presentations
+
+## IMPORTANT — Article and document output format
+When producing a scientific article, report, or extended document, ALWAYS produce it in TWO versions:
+
+VERSION 1 — READABLE (produce first):
+Write the full article in clean, well-structured prose with all mathematical content rendered in LaTeX inline. Use clear section headers. This version is for immediate reading and sharing.
+Mark it clearly with: [VERSIONE LEGGIBILE]
+
+VERSION 2 — LATEX CODE (produce after):
+Provide the complete compilable LaTeX code for the same document.
+Mark it clearly with: [CODICE LATEX]
 
 ## When you take initiative
-You proactively (but without interrupting the flow):
-- Signal when a topic is open or unresolved in the literature
-- Suggest counterexamples or boundary cases worth checking
-- Flag recent papers that may be relevant to the discussion
-- Identify natural research directions arising from results discussed
-- Analyze published articles and suggest variations or extensions that could be the basis for new publications
-- Evaluate the originality of an idea by checking whether similar work has already been published, and if so, highlight it clearly
+- Signal open/unresolved topics in literature
+- Suggest counterexamples or boundary cases
+- Flag recent relevant papers
+- Identify research directions from results discussed
+- Suggest variations of published work for new publications
+- Check originality of ideas against existing literature
 
 ## Scientific rigor — non-negotiable rules
-1. You explicitly admit when you don't know something
-2. You NEVER invent bibliographic references — if unsure, you say so and suggest where to search
-3. You always distinguish clearly between established results, conjectures, and your own observations
-4. You ask for clarification before proceeding on ambiguous points
-5. Before proposing a new idea, you check whether similar published work exists and flag it
+1. Explicitly admit when you don't know something
+2. NEVER invent bibliographic references
+3. Always distinguish established results, conjectures, and your own observations
+4. Ask for clarification before proceeding on ambiguous points
+5. Before proposing a new idea, check whether similar work exists
 
 ## LaTeX
-All mathematical expressions, theorems, proofs, and formal statements must be written in LaTeX. Use standard environments: \\begin{theorem}, \\begin{proof}, \\begin{lemma}, etc.
+All mathematical expressions must be written in LaTeX: \\begin{theorem}, \\begin{proof}, \\begin{lemma}, etc.
 
 ---
 
 ## PEER REVIEW MODE
-When Maria Rosaria provides a manuscript to be reviewed, activate Peer Review Mode automatically.
-The entire review output is always written in English. The identity of the reviewer must never appear in the review output.
-Ask before starting: depth level (brief/standard/in-depth) and whether a confidential note to the editor is needed.
-Output structure: 1. Summary 2. Main strengths 3. Major concerns (precise location + passage + explanation + suggestion) 4. Minor concerns (same) 5. Recommendations to authors 6. Final recommendation 7. Confidential note to editor (if requested).
-Rules: professional tone, never invent references, always locate criticisms precisely in the text.
+When Maria Rosaria provides a manuscript to review, activate Peer Review Mode.
+Output always in English. Reviewer identity never appears.
+Ask first: depth level (brief/standard/in-depth) and confidential note to editor needed?
+Structure: 1.Summary 2.Strengths 3.Major concerns (precise location+passage+explanation+suggestion) 4.Minor concerns 5.Recommendations 6.Final recommendation 7.Confidential note (if requested).
 
 ---
 
 ## NEWSLETTER MODE
-When Maria Rosaria asks to prepare a newsletter, activate Newsletter Mode.
-Newsletter written in Italian. Audience: Maria Rosaria and her research group at Sapienza.
-Frequency: monthly or since last newsletter. First newsletter covers previous 1.5 months.
-Ask before starting: first newsletter or not, specific topics, specific events.
-Search: arXiv (math.AP, math.FA, math.PR), relevant journals, conferences, LinkedIn and scientific Facebook groups only.
-Topics: fractals, Koch domains, Dirichlet forms, Venttsel conditions, PDEs on irregular domains, fractional Laplacian, subelliptic operators, Mosco convergence, anomalous diffusion.
-Each item: authors, title, date, 7-line summary (topic, problem, methods, results). Never invent references.
+Newsletter in Italian. Audience: Maria Rosaria and research group.
+Frequency: monthly or since last. First: covers previous 1.5 months.
+Ask first: first newsletter?, specific topics?, specific events?
+Sources: arXiv (math.AP, math.FA, math.PR), journals (Fractal and Fractional, JMAA, SIAM, JEE), conferences, LinkedIn and scientific Facebook groups only.
+Each item: authors, title, date, 7-line summary. Never invent references.
 
 ---
 
 ## SLIDE PRESENTATION MODE
-When asked to prepare conference slides, activate Slide Presentation Mode.
-All slide output in English. Conversation in Italian.
-Follow style from uploaded reference presentations if available.
-Ask before starting: conference name/date, talk duration, topic, specific results, slide constraints.
-Process: 1. Produce slide-by-slide outline in Italian for approval — NO LaTeX code yet. 2. Wait for explicit approval. 3. Only then produce complete LaTeX Beamer code.
-Slide counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40. Never invent results or references.`;
+All slides in English. Conversation in Italian.
+Ask first: conference/date, duration, topic, results to highlight, slide constraints.
+Process: 1.Outline in Italian for approval (NO LaTeX yet) 2.Wait approval 3.Complete Beamer code.
+Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
 
+    // ── API Key ──
     function saveApiKey() {
       const key = document.getElementById('apiKeyInput').value.trim();
-      if (!key.startsWith('sk-ant-')) { alert('La API Key deve iniziare con "sk-ant-". Verifica di aver copiato la chiave corretta da console.anthropic.com'); return; }
+      if (!key.startsWith('sk-ant-')) { alert('La API Key deve iniziare con "sk-ant-". Verifica su console.anthropic.com'); return; }
       apiKey = key;
       document.getElementById('apiModal').style.display = 'none';
     }
-
     document.getElementById('apiKeyInput').addEventListener('keydown', e => { if (e.key === 'Enter') saveApiKey(); });
 
+    // ── Home ──
     function goHome() {
-      conversationHistory = [];
-      sessionCount = 0;
+      conversationHistory = []; sessionCount = 0;
       const messages = document.getElementById('messages');
       messages.innerHTML = '';
-      const welcome = document.createElement('div');
-      welcome.className = 'welcome';
-      welcome.id = 'welcome';
-      welcome.innerHTML = `
+      const w = document.createElement('div');
+      w.className = 'welcome'; w.id = 'welcome';
+      w.innerHTML = `
         <span class="welcome-icon">❄️</span>
         <h2>Benoît è pronto</h2>
         <p>Collaboratore di ricerca in analisi matematica, frattali,<br>forme di Dirichlet e PDE su domini irregolari.</p>
@@ -398,55 +516,172 @@ Slide counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40. Never invent r
           <div class="mode-card" onclick="quickStart('Benoît, presentati.')"><span class="mode-icon">🤝</span><div class="mode-title">Presentazione</div><div class="mode-desc">Conosci Benoît e le sue capacità</div></div>
           <div class="mode-card" onclick="quickStart('Benoît, vorrei fare una peer review.')"><span class="mode-icon">📝</span><div class="mode-title">Peer Review</div><div class="mode-desc">Valutazione articoli per riviste</div></div>
           <div class="mode-card" onclick="quickStart('Benoît, prepara la newsletter.')"><span class="mode-icon">📰</span><div class="mode-title">Newsletter</div><div class="mode-desc">Aggiornamenti per il gruppo di ricerca</div></div>
-          <div class="mode-card" onclick="quickStart('Benoît, devo preparare delle slide per una conferenza.')"><span class="mode-icon">🎯</span><div class="mode-title">Slide</div><div class="mode-desc">Presentazioni LaTeX Beamer</div></div>
+          <div class="mode-card" onclick="quickStart('Benoît, devo preparare delle slide per una conferenza.')"><span class="mode-icon">🎯</span><div class="mode-title">Slide Beamer</div><div class="mode-desc">Presentazioni LaTeX per conferenze</div></div>
         </div>`;
-      messages.appendChild(welcome);
+      messages.appendChild(w);
       document.getElementById('sessionLog').innerHTML = '<div class="empty-log">La conversazione apparirà qui</div>';
     }
 
+    // ── Session log ──
     function addToSessionLog(role, text) {
       const log = document.getElementById('sessionLog');
       const empty = log.querySelector('.empty-log');
       if (empty) empty.remove();
       sessionCount++;
-      if (sessionCount > 14) { const first = log.querySelector('.session-item'); if (first) first.remove(); }
+      if (sessionCount > 16) { const first = log.querySelector('.session-item'); if (first) first.remove(); }
       const item = document.createElement('div');
       item.className = `session-item ${role === 'benoit' ? 'benoit-log' : 'user-log'}`;
-      const plain = text.replace(/<[^>]*>/g, '');
-      item.innerHTML = `<div class="session-item-who ${role === 'benoit' ? 'benoit' : 'user'}">${role === 'benoit' ? 'Benoît' : 'Maria Rosaria'}</div><div class="session-item-text">${plain.substring(0, 90)}${plain.length > 90 ? '...' : ''}</div>`;
+      const plain = text.replace(/<[^>]*>/g, '').replace(/\[VERSIONE LEGGIBILE\]|\[CODICE LATEX\]/g, '');
+      item.innerHTML = `<div class="session-item-who ${role}">${role === 'benoit' ? 'Benoît' : 'Maria Rosaria'}</div><div class="session-item-text">${plain.substring(0,85)}${plain.length>85?'...':''}</div>`;
       log.appendChild(item);
       log.scrollTop = log.scrollHeight;
     }
 
+    // ── Voice ──
     function toggleVoice() {
-      if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) { alert('Il riconoscimento vocale non è supportato in questo browser. Usa Chrome.'); return; }
+      if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) { alert('Usa Chrome per il riconoscimento vocale.'); return; }
       if (isRecording) { recognition.stop(); return; }
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
       recognition = new SR();
-      recognition.lang = 'it-IT';
-      recognition.continuous = false;
-      recognition.interimResults = true;
+      recognition.lang = 'it-IT'; recognition.continuous = false; recognition.interimResults = true;
       recognition.onstart = () => { isRecording = true; document.getElementById('voiceBtn').classList.add('recording'); };
-      recognition.onresult = (e) => { const t = Array.from(e.results).map(r => r[0].transcript).join(''); document.getElementById('userInput').value = t; autoResize(document.getElementById('userInput')); };
-      recognition.onend = () => { isRecording = false; document.getElementById('voiceBtn').classList.remove('recording'); const t = document.getElementById('userInput').value.trim(); if (t) sendMessage(); };
+      recognition.onresult = e => { const t = Array.from(e.results).map(r=>r[0].transcript).join(''); document.getElementById('userInput').value = t; autoResize(document.getElementById('userInput')); };
+      recognition.onend = () => { isRecording = false; document.getElementById('voiceBtn').classList.remove('recording'); const t = document.getElementById('userInput').value.trim(); if(t) sendMessage(); };
       recognition.onerror = () => { isRecording = false; document.getElementById('voiceBtn').classList.remove('recording'); };
       recognition.start();
     }
 
-    function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 180) + 'px'; }
-    function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
-    function quickStart(text) { document.getElementById('userInput').value = text; sendMessage(); }
-    function formatTime(d) { return d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }); }
+    // ── UI helpers ──
+    function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,160)+'px'; }
+    function handleKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();} }
+    function quickStart(text) { document.getElementById('userInput').value=text; sendMessage(); }
+    function formatTime(d) { return d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}); }
+    function scrollToBottom() { const m=document.getElementById('messages'); m.scrollTop=m.scrollHeight; }
 
+    // ── Format message with article detection ──
     function formatMessage(text) {
+      // Detect if message contains article markers
+      const hasReadable = text.includes('[VERSIONE LEGGIBILE]');
+      const hasLatex = text.includes('[CODICE LATEX]');
+
+      if (hasReadable || hasLatex) {
+        return formatArticleOutput(text);
+      }
+
       return text
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/^### (.*?)$/gm, '<h3>$1</h3>')
+        .replace(/^## (.*?)$/gm, '<h2>$1</h2>')
+        .replace(/^# (.*?)$/gm, '<h1>$1</h1>')
         .replace(/`([^`]+)`/g, '<code>$1</code>')
         .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
         .replace(/\n/g, '<br>');
     }
 
+    function formatArticleOutput(text) {
+      const parts = text.split(/\[VERSIONE LEGGIBILE\]|\[CODICE LATEX\]/);
+      let html = '';
+      let readableContent = '';
+      let latexContent = '';
+
+      // Find readable and latex sections
+      const readableIdx = text.indexOf('[VERSIONE LEGGIBILE]');
+      const latexIdx = text.indexOf('[CODICE LATEX]');
+
+      if (readableIdx !== -1) {
+        const afterReadable = text.substring(readableIdx + '[VERSIONE LEGGIBILE]'.length);
+        readableContent = latexIdx > readableIdx
+          ? afterReadable.substring(0, afterReadable.indexOf('[CODICE LATEX]'))
+          : afterReadable;
+      }
+
+      if (latexIdx !== -1) {
+        const afterLatex = text.substring(latexIdx + '[CODICE LATEX]'.length);
+        latexContent = afterLatex;
+      }
+
+      // Intro text before markers
+      const introEnd = Math.min(readableIdx !== -1 ? readableIdx : 9999, latexIdx !== -1 ? latexIdx : 9999);
+      const intro = text.substring(0, introEnd).trim();
+      if (intro) {
+        html += `<p>${intro.replace(/\n/g,'<br>')}</p>`;
+      }
+
+      // Readable version
+      if (readableContent) {
+        const readableFormatted = readableContent.trim()
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          .replace(/^### (.*?)$/gm, '<h3>$1</h3>')
+          .replace(/^## (.*?)$/gm, '<h2>$1</h2>')
+          .replace(/^# (.*?)$/gm, '<h1>$1</h1>')
+          .replace(/\n/g, '<br>');
+
+        html += `
+          <div style="margin-top:14px;">
+            <div style="font-size:12px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">📄 Versione leggibile</div>
+            <div class="article-readable" id="articleReadable">${readableFormatted}</div>
+            <div class="article-actions">
+              <button class="action-btn primary" onclick="savePDF()">📥 Salva PDF</button>
+            </div>
+          </div>`;
+      }
+
+      // LaTeX version
+      if (latexContent) {
+        const escapedLatex = latexContent.trim().replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        const rawLatex = latexContent.trim();
+        html += `
+          <div style="margin-top:16px;">
+            <div style="font-size:12px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">💻 Codice LaTeX</div>
+            <pre style="max-height:300px;overflow-y:auto;"><code>${escapedLatex}</code></pre>
+            <div class="article-actions">
+              <button class="action-btn" onclick="copyLatex(this)" data-latex="${encodeURIComponent(rawLatex)}">📋 Copia LaTeX</button>
+              <button class="action-btn" onclick="openOverleaf(this)" data-latex="${encodeURIComponent(rawLatex)}">🔗 Apri in Overleaf</button>
+            </div>
+          </div>`;
+      }
+
+      return html;
+    }
+
+    function copyLatex(btn) {
+      const latex = decodeURIComponent(btn.getAttribute('data-latex'));
+      navigator.clipboard.writeText(latex).then(() => {
+        const orig = btn.innerHTML;
+        btn.innerHTML = '✅ Copiato!';
+        setTimeout(() => btn.innerHTML = orig, 2000);
+      });
+    }
+
+    function openOverleaf(btn) {
+      const latex = decodeURIComponent(btn.getAttribute('data-latex'));
+      const encoded = encodeURIComponent(latex);
+      window.open(`https://www.overleaf.com/docs?snip_uri=data:application/x-tex;charset=utf-8,${encoded}`, '_blank');
+    }
+
+    function savePDF() {
+      const readable = document.getElementById('articleReadable');
+      if (!readable) return;
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(`
+        <!DOCTYPE html><html><head>
+        <meta charset="UTF-8">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+        <style>
+          body { font-family: Georgia, serif; font-size: 12pt; line-height: 1.8; max-width: 700px; margin: 40px auto; color: #111; }
+          h1 { font-size: 18pt; text-align: center; margin-bottom: 6px; }
+          h2 { font-size: 13pt; font-weight: bold; margin-top: 20px; text-transform: uppercase; letter-spacing: 0.05em; }
+          h3 { font-size: 12pt; font-weight: bold; margin-top: 14px; }
+          .katex { font-size: 11pt; }
+        </style>
+        </head><body>${readable.innerHTML}</body></html>`);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => { printWindow.print(); printWindow.close(); }, 800);
+    }
+
+    // ── Add message ──
     function addMessage(role, content) {
       const welcome = document.getElementById('welcome');
       if (welcome) welcome.remove();
@@ -467,56 +702,54 @@ Slide counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40. Never invent r
       setTimeout(() => {
         const el = wrapper.querySelector('.message-content');
         if (window.renderMathInElement) {
-          renderMathInElement(el, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }, { left: '\\[', right: '\\]', display: true }, { left: '\\(', right: '\\)', display: false }], throwOnError: false });
+          renderMathInElement(el, {
+            delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false},{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}],
+            throwOnError: false
+          });
         }
-      }, 100);
+      }, 150);
     }
 
     function addTypingIndicator() {
       const welcome = document.getElementById('welcome');
       if (welcome) welcome.remove();
       const wrapper = document.createElement('div');
-      wrapper.className = 'message-wrapper benoit';
-      wrapper.id = 'typing';
+      wrapper.className = 'message-wrapper benoit'; wrapper.id = 'typing';
       wrapper.innerHTML = `<div class="message-header"><div class="msg-avatar benoit">❄️</div><span class="msg-name benoit">Benoît</span></div><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
       document.getElementById('messages').appendChild(wrapper);
       scrollToBottom();
     }
 
-    function removeTypingIndicator() { const t = document.getElementById('typing'); if (t) t.remove(); }
-    function scrollToBottom() { const m = document.getElementById('messages'); m.scrollTop = m.scrollHeight; }
+    function removeTypingIndicator() { const t=document.getElementById('typing'); if(t) t.remove(); }
 
+    // ── API call ──
     async function sendMessage() {
-      if (!apiKey) { document.getElementById('apiModal').style.display = 'flex'; return; }
+      if (!apiKey) { document.getElementById('apiModal').style.display='flex'; return; }
       const input = document.getElementById('userInput');
       const text = input.value.trim();
       if (!text || isLoading) return;
-      input.value = '';
-      input.style.height = 'auto';
-      isLoading = true;
-      document.getElementById('sendBtn').disabled = true;
+      input.value = ''; input.style.height = 'auto';
+      isLoading = true; document.getElementById('sendBtn').disabled = true;
       addMessage('user', text);
-      conversationHistory.push({ role: 'user', content: text });
+      conversationHistory.push({role:'user', content:text});
       addTypingIndicator();
       try {
         const response = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-          body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 4096, system: SYSTEM_PROMPT, messages: conversationHistory }),
+          headers: {'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+          body: JSON.stringify({model:'claude-sonnet-4-5', max_tokens:4096, system:SYSTEM_PROMPT, messages:conversationHistory}),
         });
-        if (!response.ok) { const err = await response.json(); throw new Error(err.error?.message || `Errore API: ${response.status}`); }
+        if (!response.ok) { const err=await response.json(); throw new Error(err.error?.message||`Errore API: ${response.status}`); }
         const data = await response.json();
         const reply = data.content[0].text;
         removeTypingIndicator();
         addMessage('benoit', reply);
-        conversationHistory.push({ role: 'assistant', content: reply });
-      } catch (err) {
+        conversationHistory.push({role:'assistant', content:reply});
+      } catch(err) {
         removeTypingIndicator();
         addMessage('benoit', `⚠️ Errore di connessione: ${err.message}. Verifica la API Key e riprova.`);
       } finally {
-        isLoading = false;
-        document.getElementById('sendBtn').disabled = false;
-        input.focus();
+        isLoading = false; document.getElementById('sendBtn').disabled = false; input.focus();
       }
     }
   </script>
