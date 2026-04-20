@@ -450,13 +450,24 @@
     // ── Supabase config ──
     const SUPABASE_URL = 'https://kasppqvasexhwskaxjdl.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imthc3BwcXZhc2V4aHdza2F4amRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY2NDAxNjYsImV4cCI6MjA5MjIxNjE2Nn0.nP69RjWNtiXHL2LhHv8a_wlNUSWbatCaB33d3cH9Z2I';
-    let supabase = null;
+    let _supabaseClient = null;
     function getSupabase() {
-      if (supabase) return supabase;
-      if (window.supabase && window.supabase.createClient) {
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      if (_supabaseClient) return _supabaseClient;
+      try {
+        // Try different ways the UMD build exposes itself
+        const factory = (typeof supabase !== 'undefined' && supabase.createClient)
+          ? supabase
+          : (window.supabase?.createClient ? window.supabase : null);
+        if (factory) {
+          _supabaseClient = factory.createClient(SUPABASE_URL, SUPABASE_KEY);
+          console.log('Supabase client created successfully');
+        } else {
+          console.warn('Supabase library not available');
+        }
+      } catch(e) {
+        console.error('Supabase init error:', e);
       }
-      return supabase;
+      return _supabaseClient;
     }
 
     let apiKey = '';
