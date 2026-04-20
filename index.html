@@ -375,12 +375,28 @@
   </div>
 
   <!-- Supabase -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+  // Load Supabase dynamically to avoid blocking
+  (function() {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js';
+    script.onload = function() { console.log('Supabase loaded'); };
+    script.onerror = function() { console.log('Supabase failed to load - continuing without memory'); };
+    document.head.appendChild(script);
+  })();
+  </script>
   <script>
     // ── Supabase config ──
     const SUPABASE_URL = 'https://kasppqvasexhwskaxjdl.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imthc3BwcXZhc2V4aHdza2F4amRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY2NDAxNjYsImV4cCI6MjA5MjIxNjE2Nn0.nP69RjWNtiXHL2LhHv8a_wlNUSWbatCaB33d3cH9Z2I';
-    const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+    let supabase = null;
+    function getSupabase() {
+      if (supabase) return supabase;
+      if (window.supabase && window.supabase.createClient) {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      }
+      return supabase;
+    }
 
     let apiKey = '';
     let conversationHistory = [];
@@ -505,10 +521,10 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
 
     // ── API Key ──
     async function continuaLavoro() {
-      if (!supabase) { alert('Database non disponibile.'); return; }
+      if (!getSupabase()) { alert('Database non disponibile.'); return; }
       const recenti = await loadRecentConversations();
       const progetti = await new Promise(async (resolve) => {
-        const {data} = await supabase.from('projects').select('*').eq('status','open').order('updated_at',{ascending:false}).limit(1);
+        const {data} = await getSupabase().from('projects').select('*').eq('status','open').order('updated_at',{ascending:false}).limit(1);
         resolve(data || []);
       });
       if (progetti.length > 0) {
@@ -603,9 +619,9 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
     let currentConversationId = null;
 
     async function createConversation(type='chat', title='Nuova conversazione') {
-      if (!supabase) return null;
+      if (!getSupabase()) return null;
       try {
-        const {data, error} = await supabase.from('conversations').insert({type, title}).select().single();
+        const {data, error} = await getSupabase().from('conversations').insert({type, title}).select().single();
         if (error) throw error;
         currentConversationId = data.id;
         return data.id;
@@ -615,33 +631,33 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
     async function saveMessage(role, content) {
       if (!supabase || !currentConversationId) return;
       try {
-        await supabase.from('messages').insert({conversation_id: currentConversationId, role, content});
-        await supabase.from('conversations').update({updated_at: new Date().toISOString()}).eq('id', currentConversationId);
+        await getSupabase().from('messages').insert({conversation_id: currentConversationId, role, content});
+        await getSupabase().from('conversations').update({updated_at: new Date().toISOString()}).eq('id', currentConversationId);
       } catch(e) { console.error('DB error:', e); }
     }
 
     async function loadConversation(conversationId) {
-      if (!supabase) return [];
+      if (!getSupabase()) return [];
       try {
-        const {data, error} = await supabase.from('messages').select('*').eq('conversation_id', conversationId).order('created_at', {ascending: true});
+        const {data, error} = await getSupabase().from('messages').select('*').eq('conversation_id', conversationId).order('created_at', {ascending: true});
         if (error) throw error;
         return data || [];
       } catch(e) { console.error('DB error:', e); return []; }
     }
 
     async function loadRecentConversations() {
-      if (!supabase) return [];
+      if (!getSupabase()) return [];
       try {
-        const {data, error} = await supabase.from('conversations').select('*').order('updated_at', {ascending: false}).limit(10);
+        const {data, error} = await getSupabase().from('conversations').select('*').order('updated_at', {ascending: false}).limit(10);
         if (error) throw error;
         return data || [];
       } catch(e) { console.error('DB error:', e); return []; }
     }
 
     async function saveProject(title, type, content, summary) {
-      if (!supabase) return null;
+      if (!getSupabase()) return null;
       try {
-        const {data, error} = await supabase.from('projects').insert({
+        const {data, error} = await getSupabase().from('projects').insert({
           title, type, content, summary, conversation_id: currentConversationId, status: 'open'
         }).select().single();
         if (error) throw error;
@@ -651,18 +667,18 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
     }
 
     async function loadProjects() {
-      if (!supabase) return;
+      if (!getSupabase()) return;
       try {
-        const {data, error} = await supabase.from('projects').select('*').eq('status','open').order('updated_at', {ascending: false});
+        const {data, error} = await getSupabase().from('projects').select('*').eq('status','open').order('updated_at', {ascending: false});
         if (error) throw error;
         renderProjects(data || []);
       } catch(e) { console.error('DB error:', e); }
     }
 
     async function closeProject(id) {
-      if (!supabase) return;
+      if (!getSupabase()) return;
       try {
-        await supabase.from('projects').update({status:'closed'}).eq('id', id);
+        await getSupabase().from('projects').update({status:'closed'}).eq('id', id);
         await loadProjects();
       } catch(e) { console.error('DB error:', e); }
     }
