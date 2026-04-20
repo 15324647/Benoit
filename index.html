@@ -658,14 +658,45 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
         list.innerHTML = '<div class="repo-empty">Database non disponibile</div>';
         return;
       }
+      list.innerHTML = '<div class="repo-empty">Caricamento...</div>';
       try {
-        const { data, error } = await sb.storage.from('papers').list('', {
-          limit: 200, offset: 0, sortBy: { column: 'created_at', order: 'desc' }
+        // First list root to find folders and files
+        const { data: rootItems, error: rootError } = await sb.storage.from('papers').list('', {
+          limit: 200, offset: 0
         });
-        if (error) throw error;
-        allRepoFiles = data || [];
+        if (rootError) throw rootError;
+
+        let allFiles = [];
+
+        for (const item of (rootItems || [])) {
+          if (item.id === null) {
+            // It's a folder — list its contents
+            const { data: folderItems, error: folderError } = await sb.storage.from('papers').list(item.name, {
+              limit: 500, offset: 0, sortBy: { column: 'name', order: 'asc' }
+            });
+            if (!folderError && folderItems) {
+              folderItems.forEach(f => {
+                if (f.id !== null) { // it's a file
+                  allFiles.push({ ...f, path: `${item.name}/${f.name}`, folder: item.name });
+                }
+              });
+            }
+          } else {
+            // It's a file in root
+            allFiles.push({ ...item, path: item.name, folder: '' });
+          }
+        }
+
+        // Sort by folder then name
+        allFiles.sort((a, b) => {
+          if (a.folder !== b.folder) return b.folder.localeCompare(a.folder); // newest year first
+          return a.name.localeCompare(b.name);
+        });
+
+        allRepoFiles = allFiles;
         renderRepoFiles(allRepoFiles);
       } catch(e) {
+        console.error('Repo load error:', e);
         list.innerHTML = '<div class="repo-empty">Errore nel caricamento dei file</div>';
       }
     }
@@ -677,13 +708,22 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
         return;
       }
       list.innerHTML = '';
+      let currentFolder = null;
       files.forEach(f => {
+        // Show folder header when folder changes
+        if (f.folder && f.folder !== currentFolder) {
+          currentFolder = f.folder;
+          const header = document.createElement('div');
+          header.style.cssText = 'font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;padding:8px 4px 4px;margin-top:4px;';
+          header.textContent = `📁 ${f.folder}`;
+          list.appendChild(header);
+        }
         const size = f.metadata?.size ? (f.metadata.size / 1024 / 1024).toFixed(1) + ' MB' : '';
         const icon = f.name.endsWith('.pdf') ? '📄' : f.name.endsWith('.md') ? '📝' : '📃';
         const item = document.createElement('div');
         item.className = 'repo-item';
         item.innerHTML = `<span class="ri-icon">${icon}</span><span class="ri-name">${f.name}</span><span class="ri-size">${size}</span>`;
-        item.addEventListener('click', () => selectRepoFile(f.name));
+        item.addEventListener('click', () => selectRepoFile(f.path));
         list.appendChild(item);
       });
     }
