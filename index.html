@@ -672,7 +672,7 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
       list.innerHTML = '<div class="repo-empty">Caricamento...</div>';
       try {
         // First list root to find folders and files
-        const { data: rootItems, error: rootError } = await sb.storage.from('papers').list('', {
+        const { data: rootItems, error: rootError } = await sb.storage.from('paper').list('', {
           limit: 200, offset: 0
         });
         if (rootError) throw rootError;
@@ -682,7 +682,7 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
         for (const item of (rootItems || [])) {
           if (item.id === null) {
             // It's a folder — list its contents
-            const { data: folderItems, error: folderError } = await sb.storage.from('papers').list(item.name, {
+            const { data: folderItems, error: folderError } = await sb.storage.from('paper').list(item.name, {
               limit: 500, offset: 0, sortBy: { column: 'name', order: 'asc' }
             });
             if (!folderError && folderItems) {
@@ -749,7 +749,7 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
       const sb = getSupabase();
       if (!sb) return;
       try {
-        const { data, error } = await sb.storage.from('papers').download(fileName);
+        const { data, error } = await sb.storage.from('paper').download(fileName);
         if (error) throw error;
         const file = new File([data], fileName, { type: data.type });
         await processFile(file, false); // false = don't re-upload to Supabase
@@ -770,7 +770,7 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
             const timestamp = Date.now();
             const fileName = `${timestamp}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
             const arrayBuffer = await file.arrayBuffer();
-            const { error } = await sb.storage.from('papers').upload(fileName, arrayBuffer, {
+            const { error } = await sb.storage.from('paper').upload(fileName, arrayBuffer, {
               contentType: file.type || 'application/pdf', upsert: false
             });
             if (error) console.error('Storage upload error:', error);
