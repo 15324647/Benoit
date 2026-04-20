@@ -276,8 +276,8 @@
 
     <div class="sidebar-left">
       <div class="sidebar-section-title">Modalità</div>
-      <button class="sidebar-btn" onclick="quickStart('Benoît, presentati.')">
-        <span class="sb-icon">🤝</span><span><span class="sb-label">Presentazione</span><span class="sb-desc">Conosci Benoît</span></span>
+      <button class="sidebar-btn" onclick="continuaLavoro()">
+        <span class="sb-icon">↩️</span><span><span class="sb-label">Continua lavoro</span><span class="sb-desc">Ultimo progetto</span></span>
       </button>
       <button class="sidebar-btn" onclick="quickStart('Benoît, vorrei fare una peer review.')">
         <span class="sb-icon">📝</span><span><span class="sb-label">Peer Review</span><span class="sb-desc">Valuta un articolo</span></span>
@@ -311,10 +311,10 @@
           <h2>Benoît è pronto</h2>
           <p>Collaboratore di ricerca in analisi matematica, frattali,<br>forme di Dirichlet e PDE su domini irregolari.</p>
           <div class="modes">
-            <div class="mode-card" onclick="quickStart('Benoît, presentati.')">
-              <span class="mode-icon">🤝</span>
-              <div class="mode-title">Presentazione</div>
-              <div class="mode-desc">Conosci Benoît e le sue capacità</div>
+            <div class="mode-card" onclick="continuaLavoro()">
+              <span class="mode-icon">↩️</span>
+              <div class="mode-title">Continua a lavorare</div>
+              <div class="mode-desc">Riprendi dall'ultimo progetto aperto</div>
             </div>
             <div class="mode-card" onclick="quickStart('Benoît, vorrei fare una peer review.')">
               <span class="mode-icon">📝</span>
@@ -358,7 +358,11 @@
     </div>
 
     <div class="sidebar-right">
-      <div class="sidebar-section-title">Sessione corrente</div>
+      <div class="sidebar-section-title">📁 Progetti aperti</div>
+      <div id="projectsList"><div class="empty-log">Nessun progetto aperto</div></div>
+      <button class="sidebar-action-btn" onclick="handleSaveProject()" style="margin-top:6px;">💾 Salva progetto corrente</button>
+      <div class="sidebar-divider" style="margin-top:10px;"></div>
+      <div class="sidebar-section-title">💬 Sessione corrente</div>
       <div id="sessionLog"><div class="empty-log">La conversazione apparirà qui</div></div>
       <div style="margin-top:auto;">
         <div class="sidebar-divider"></div>
@@ -370,7 +374,14 @@
 
   </div>
 
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
+    // ── Supabase config ──
+    const SUPABASE_URL = 'https://kasppqvasexhwskaxjdl.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imthc3BwcXZhc2V4aHdza2F4amRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY2NDAxNjYsImV4cCI6MjA5MjIxNjE2Nn0.nP69RjWNtiXHL2LhHv8a_wlNUSWbatCaB33d3cH9Z2I';
+    const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
     let apiKey = '';
     let conversationHistory = [];
     let isLoading = false;
@@ -493,6 +504,36 @@ Process: 1.Outline in Italian for approval (NO LaTeX yet) 2.Wait approval 3.Comp
 Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
 
     // ── API Key ──
+    async function continuaLavoro() {
+      if (!supabase) { alert('Database non disponibile.'); return; }
+      const recenti = await loadRecentConversations();
+      const progetti = await new Promise(async (resolve) => {
+        const {data} = await supabase.from('projects').select('*').eq('status','open').order('updated_at',{ascending:false}).limit(1);
+        resolve(data || []);
+      });
+      if (progetti.length > 0) {
+        openProject(progetti[0]);
+      } else if (recenti.length > 0) {
+        const ultima = recenti[0];
+        const msgs = await loadConversation(ultima.id);
+        currentConversationId = ultima.id;
+        conversationHistory = msgs.map(m => ({role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content}));
+        const messagesEl = document.getElementById('messages');
+        const welcome = document.getElementById('welcome');
+        if (welcome) welcome.remove();
+        messagesEl.innerHTML = '';
+        const header = document.createElement('div');
+        header.style.cssText = 'max-width:1100px;margin:0 auto 16px;padding:12px 16px;background:#e8f2f8;border:1px solid rgba(26,107,150,0.2);border-radius:10px;';
+        header.innerHTML = '<div style="font-weight:600;font-size:14px;color:var(--accent2);">↩️ Ultima sessione ripristinata</div><div style="font-size:12px;color:var(--text3);">Puoi continuare da dove hai lasciato</div>';
+        messagesEl.appendChild(header);
+        const lastMessages = conversationHistory.slice(-6);
+        lastMessages.forEach(m => addMessage(m.role === 'assistant' ? 'benoit' : 'user', m.content, false));
+        scrollToBottom();
+      } else {
+        alert('Nessuna sessione precedente trovata. Inizia una nuova conversazione!');
+      }
+    }
+
     function saveApiKey() {
       const key = document.getElementById('apiKeyInput').value.trim();
       if (!key.startsWith('sk-ant-')) { alert('La API Key deve iniziare con "sk-ant-". Verifica su console.anthropic.com'); return; }
@@ -503,7 +544,7 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
 
     // ── Home ──
     function goHome() {
-      conversationHistory = []; sessionCount = 0;
+      conversationHistory = []; sessionCount = 0; currentConversationId = null;
       const messages = document.getElementById('messages');
       messages.innerHTML = '';
       const w = document.createElement('div');
@@ -557,6 +598,150 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
     function quickStart(text) { document.getElementById('userInput').value=text; sendMessage(); }
     function formatTime(d) { return d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}); }
     function scrollToBottom() { const m=document.getElementById('messages'); m.scrollTop=m.scrollHeight; }
+
+    // ── Database helpers ──
+    let currentConversationId = null;
+
+    async function createConversation(type='chat', title='Nuova conversazione') {
+      if (!supabase) return null;
+      try {
+        const {data, error} = await supabase.from('conversations').insert({type, title}).select().single();
+        if (error) throw error;
+        currentConversationId = data.id;
+        return data.id;
+      } catch(e) { console.error('DB error:', e); return null; }
+    }
+
+    async function saveMessage(role, content) {
+      if (!supabase || !currentConversationId) return;
+      try {
+        await supabase.from('messages').insert({conversation_id: currentConversationId, role, content});
+        await supabase.from('conversations').update({updated_at: new Date().toISOString()}).eq('id', currentConversationId);
+      } catch(e) { console.error('DB error:', e); }
+    }
+
+    async function loadConversation(conversationId) {
+      if (!supabase) return [];
+      try {
+        const {data, error} = await supabase.from('messages').select('*').eq('conversation_id', conversationId).order('created_at', {ascending: true});
+        if (error) throw error;
+        return data || [];
+      } catch(e) { console.error('DB error:', e); return []; }
+    }
+
+    async function loadRecentConversations() {
+      if (!supabase) return [];
+      try {
+        const {data, error} = await supabase.from('conversations').select('*').order('updated_at', {ascending: false}).limit(10);
+        if (error) throw error;
+        return data || [];
+      } catch(e) { console.error('DB error:', e); return []; }
+    }
+
+    async function saveProject(title, type, content, summary) {
+      if (!supabase) return null;
+      try {
+        const {data, error} = await supabase.from('projects').insert({
+          title, type, content, summary, conversation_id: currentConversationId, status: 'open'
+        }).select().single();
+        if (error) throw error;
+        await loadProjects();
+        return data;
+      } catch(e) { console.error('DB error:', e); return null; }
+    }
+
+    async function loadProjects() {
+      if (!supabase) return;
+      try {
+        const {data, error} = await supabase.from('projects').select('*').eq('status','open').order('updated_at', {ascending: false});
+        if (error) throw error;
+        renderProjects(data || []);
+      } catch(e) { console.error('DB error:', e); }
+    }
+
+    async function closeProject(id) {
+      if (!supabase) return;
+      try {
+        await supabase.from('projects').update({status:'closed'}).eq('id', id);
+        await loadProjects();
+      } catch(e) { console.error('DB error:', e); }
+    }
+
+    async function openProject(project) {
+      // Load conversation linked to this project
+      if (project.conversation_id) {
+        const messages = await loadConversation(project.conversation_id);
+        currentConversationId = project.conversation_id;
+        conversationHistory = messages.map(m => ({role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content}));
+        
+        // Rebuild chat UI
+        const messagesEl = document.getElementById('messages');
+        const welcome = document.getElementById('welcome');
+        if (welcome) welcome.remove();
+        messagesEl.innerHTML = '';
+        
+        // Show project header
+        const header = document.createElement('div');
+        header.style.cssText = 'max-width:1100px;margin:0 auto 16px;padding:12px 16px;background:#e8f2f8;border:1px solid rgba(26,107,150,0.2);border-radius:10px;display:flex;align-items:center;gap:10px;';
+        header.innerHTML = `<span style="font-size:18px;">${project.type==='article'?'✍️':project.type==='peer_review'?'📝':project.type==='slides'?'🎯':'📰'}</span><div><div style="font-weight:600;font-size:14px;color:var(--accent2);">Progetto: ${project.title}</div><div style="font-size:12px;color:var(--text3);">Conversazione ripristinata — puoi continuare da dove hai lasciato</div></div>`;
+        messagesEl.appendChild(header);
+        
+        // Render last few messages
+        const lastMessages = conversationHistory.slice(-6);
+        lastMessages.forEach(m => addMessage(m.role === 'assistant' ? 'benoit' : 'user', m.content, false));
+        scrollToBottom();
+      }
+    }
+
+    function renderProjects(projects) {
+      const container = document.getElementById('projectsList');
+      if (!container) return;
+      if (projects.length === 0) {
+        container.innerHTML = '<div class="empty-log">Nessun progetto aperto</div>';
+        return;
+      }
+      container.innerHTML = '';
+      projects.forEach(p => {
+        const icons = {article:'✍️', peer_review:'📝', slides:'🎯', newsletter:'📰'};
+        const item = document.createElement('div');
+        item.style.cssText = 'padding:9px 10px;border-radius:8px;border:1px solid rgba(26,107,150,0.15);background:rgba(26,107,150,0.03);margin-bottom:5px;cursor:pointer;transition:all 0.15s;';
+        item.innerHTML = `
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">
+            <span style="font-size:11px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:0.05em;">${icons[p.type]||'📄'} ${p.type}</span>
+            <button onclick="event.stopPropagation();closeProject('${p.id}')" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--text3);padding:0 2px;" title="Chiudi progetto">×</button>
+          </div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px;">${p.title}</div>
+          <div style="font-size:11px;color:var(--text3);">${new Date(p.updated_at).toLocaleDateString('it-IT')}</div>`;
+        item.addEventListener('click', () => openProject(p));
+        item.addEventListener('mouseover', () => item.style.background='rgba(26,107,150,0.07)');
+        item.addEventListener('mouseout', () => item.style.background='rgba(26,107,150,0.03)');
+        container.appendChild(item);
+      });
+    }
+
+    // Save project button handler
+    async function handleSaveProject() {
+      const title = prompt('Nome del progetto:', 'Nuovo progetto');
+      if (!title) return;
+      const types = ['article','peer_review','slides','newsletter'];
+      const typeNames = ['Articolo','Peer Review','Slide','Newsletter'];
+      const typeIdx = prompt('Tipo (0=Articolo, 1=Peer Review, 2=Slide, 3=Newsletter):', '0');
+      const type = types[parseInt(typeIdx)] || 'article';
+      const lastMsg = conversationHistory.slice(-1)[0];
+      const content = lastMsg ? lastMsg.content : '';
+      const summary = content.substring(0, 200);
+      const result = await saveProject(title, type, content, summary);
+      if (result) {
+        alert('✅ Progetto salvato! Lo trovi nella sidebar destra.');
+      }
+    }
+
+    // Initialize on load
+    window.addEventListener('load', async () => {
+      if (supabase) {
+        await loadProjects();
+      }
+    });
 
     // ── Format message with article detection ──
     function formatMessage(text) {
@@ -682,7 +867,7 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
     }
 
     // ── Add message ──
-    function addMessage(role, content) {
+    function addMessage(role, content, save=true) {
       const welcome = document.getElementById('welcome');
       if (welcome) welcome.remove();
       const wrapper = document.createElement('div');
@@ -699,6 +884,7 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
       document.getElementById('messages').appendChild(wrapper);
       scrollToBottom();
       addToSessionLog(role, content);
+      if (save !== false) saveMessage(role === 'benoit' ? 'assistant' : 'user', content);
       setTimeout(() => {
         const el = wrapper.querySelector('.message-content');
         if (window.renderMathInElement) {
@@ -730,6 +916,7 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
       if (!text || isLoading) return;
       input.value = ''; input.style.height = 'auto';
       isLoading = true; document.getElementById('sendBtn').disabled = true;
+      if (!currentConversationId) await createConversation('chat', text.substring(0,50));
       addMessage('user', text);
       conversationHistory.push({role:'user', content:text});
       addTypingIndicator();
