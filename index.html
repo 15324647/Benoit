@@ -780,7 +780,7 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
           try {
             // Save in "Caricati" folder with clean name (no timestamp prefix)
             const cleanName = file.name.replace(/[^a-zA-Z0-9._\-\s]/g, '_');
-            const folderPath = `Caricati/${cleanName}`;
+            const folderPath = `file di lavoro/${cleanName}`;
             const arrayBuffer = await file.arrayBuffer();
             const { error } = await sb.storage.from('paper').upload(folderPath, arrayBuffer, {
               contentType: file.type || 'application/pdf', upsert: true
