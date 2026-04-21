@@ -332,14 +332,14 @@
       </button>
       <div class="sidebar-divider"></div>
       <div class="sidebar-section-title">Ricerca</div>
-      <button class="sidebar-btn" onclick="quickStart('Benoît, cerca paper recenti su forme di Dirichlet e frattali.')">
-        <span class="sb-icon">🔬</span><span><span class="sb-label">Letteratura</span><span class="sb-desc">Paper recenti</span></span>
+      <button class="sidebar-btn" onclick="avviaRicercaLetteratura()">
+        <span class="sb-icon">🔬</span><span><span class="sb-label">Letteratura</span><span class="sb-desc">Cerca paper per argomento</span></span>
       </button>
-      <button class="sidebar-btn" onclick="avviaNuovaIdea()">
-        <span class="sb-icon">💡</span><span><span class="sb-label">Idee nuove</span><span class="sb-desc">Nuovo progetto di ricerca</span></span>
+      <button class="sidebar-btn" onclick="avviaNuovoLavoro()">
+        <span class="sb-icon">💡</span><span><span class="sb-label">Nuovo lavoro</span><span class="sb-desc">Nuovo progetto di ricerca</span></span>
       </button>
-      <button class="sidebar-btn" onclick="quickStart('Benoît, aiutami a scrivere la bozza di un articolo scientifico.')">
-        <span class="sb-icon">✍️</span><span><span class="sb-label">Articolo</span><span class="sb-desc">Bozza completa</span></span>
+      <button class="sidebar-btn" onclick="quickStart('Benoît, scrivi l'articolo in doppia versione — leggibile e LaTeX.')">
+        <span class="sb-icon">✍️</span><span><span class="sb-label">Scrivi l'articolo</span><span class="sb-desc">Versione leggibile + LaTeX</span></span>
       </button>
       <button class="sidebar-btn" onclick="quickStart('Benoît, dimostra o discuti questo risultato:')">
         <span class="sb-icon">∂</span><span><span class="sb-label">Dimostrazione</span><span class="sb-desc">LaTeX formale</span></span>
@@ -593,8 +593,13 @@ Structure: 1.Summary 2.Strengths 3.Major concerns (precise location+passage+expl
 Newsletter in Italian. Audience: Maria Rosaria and research group.
 Frequency: monthly or since last. First: covers previous 1.5 months.
 Ask first: first newsletter?, specific topics?, specific events?
-Sources: arXiv (math.AP, math.FA, math.PR), journals (Fractal and Fractional, JMAA, SIAM, JEE), conferences, LinkedIn and scientific Facebook groups only.
-Each item: authors, title, date, 7-line summary. Never invent references.
+
+ALWAYS start newsletter with: "⚠️ Nota: Non ho accesso a MathSciNet, Scopus e Web of Science in quanto richiedono abbonamento. La ricerca è limitata ad arXiv e Semantic Scholar."
+
+Search ONLY: arXiv (math.AP, math.FA, math.PR), Semantic Scholar, conferences, LinkedIn/Facebook scientific groups.
+For each item on arXiv/Semantic Scholar: authors, title, date, 7-line summary.
+For items on restricted platforms (title only visible): list title + authors + "Abstract non disponibile — articolo su piattaforma con accesso limitato."
+NEVER invent summaries or references. If nothing found: say so explicitly.
 
 ---
 
@@ -794,6 +799,27 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
       }
     }
 
+    // ── Ricerca letteratura ──
+    async function avviaRicercaLetteratura() {
+      const welcome = document.getElementById('welcome');
+      if (welcome) welcome.remove();
+      if (!currentConversationId) await createConversation('chat', 'Ricerca letteratura');
+      const msg = 'Maria Rosaria, su che argomento devo cercare la letteratura?';
+      addMessage('benoit', msg, false);
+      conversationHistory.push({role:'assistant', content:msg});
+    }
+
+    // ── Nuovo lavoro (unisce Articolo e Idee nuove) ──
+    async function avviaNuovoLavoro() {
+      const welcome = document.getElementById('welcome');
+      if (welcome) welcome.remove();
+      if (!currentConversationId) await createConversation('article', 'Nuovo lavoro');
+      const msg = 'Buongiorno Professoressa, su cosa vogliamo lavorare oggi? Partiamo da un articolo esistente o esploriamo una nuova direzione di ricerca? Creiamo subito un progetto?';
+      addMessage('benoit', msg, false);
+      conversationHistory.push({role:'assistant', content:msg});
+      window._waitingForProjectConfirm = true;
+    }
+
     // ── Nuova idea con progetto ──
     async function avviaNuovaIdea() {
       const welcome = document.getElementById('welcome');
@@ -816,6 +842,45 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
       const input = document.getElementById('userInput');
       const text = input.value.trim();
       if (!text || isLoading) return;
+
+      // Check if message mentions a file in repository
+      const fileMatch = text.match(/["']([^"']+\.(pdf|PDF|tex|md|txt))["']|([\w\-]+\.(pdf|PDF|tex|md|txt))/);
+      if (fileMatch && !attachedFile) {
+        const fileName = fileMatch[1] || fileMatch[3];
+        const sb = getSupabase();
+        if (sb) {
+          // Try to find and load the file from repository
+          try {
+            const { data: fileList } = await sb.storage.from('paper').list('', {limit:1000});
+            let foundPath = null;
+            // Search in all folders
+            const folders = (fileList || []).filter(f => f.id === null).map(f => f.name);
+            const rootFiles = (fileList || []).filter(f => f.id !== null);
+            
+            for (const f of rootFiles) {
+              if (f.name.toLowerCase().includes(fileName.toLowerCase())) { foundPath = f.name; break; }
+            }
+            
+            if (!foundPath) {
+              for (const folder of folders) {
+                const { data: folderFiles } = await sb.storage.from('paper').list(folder);
+                for (const f of (folderFiles || [])) {
+                  if (f.name.toLowerCase().includes(fileName.toLowerCase())) { foundPath = `${folder}/${f.name}`; break; }
+                }
+                if (foundPath) break;
+              }
+            }
+
+            if (foundPath) {
+              const { data: fileData } = await sb.storage.from('paper').download(foundPath);
+              if (fileData) {
+                attachedFile = new File([fileData], foundPath.split('/').pop(), {type: fileData.type});
+                showFileBadge(attachedFile.name);
+              }
+            }
+          } catch(e) { console.error('Auto-file load error:', e); }
+        }
+      }
 
       // Check if waiting for project confirmation
       if (window._waitingForProjectConfirm) {
@@ -971,29 +1036,24 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
       recognition = new SR();
       recognition.lang = 'it-IT'; recognition.continuous = false; recognition.interimResults = true;
       recognition.onstart = () => { isRecording = true; document.getElementById('voiceBtn').classList.add('recording'); };
+      let silenceTimer = null;
+
       recognition.onresult = e => {
         const t = Array.from(e.results).map(r=>r[0].transcript).join('');
         document.getElementById('userInput').value = t;
         autoResize(document.getElementById('userInput'));
-        // Check for "vai" in real time during speech
-        const lower = t.toLowerCase().trim();
-        if (lower.endsWith('vai') || lower.endsWith(' vai') || lower.endsWith('invia')) {
-          recognition.stop(); // stop recording, onend will handle sending
-        }
+        // Reset silence timer on every new speech result
+        if (silenceTimer) clearTimeout(silenceTimer);
+        silenceTimer = setTimeout(() => {
+          if (isRecording) recognition.stop();
+        }, 2000);
       };
       recognition.onend = () => {
         isRecording = false;
+        if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null; }
         document.getElementById('voiceBtn').classList.remove('recording');
         const t = document.getElementById('userInput').value.trim();
-        const lower = t.toLowerCase().trim();
-        // Send if "vai" detected at end
-        if (t && (lower.endsWith('vai') || lower.endsWith('invia'))) {
-          const clean = t.replace(/\s*(vai|invia)\s*$/i, '').trim();
-          document.getElementById('userInput').value = clean;
-          autoResize(document.getElementById('userInput'));
-          if (clean) sendMessage();
-        }
-        // Otherwise leave in input for manual send with Enter
+        if (t) sendMessage();
       };
       recognition.onerror = () => { isRecording = false; document.getElementById('voiceBtn').classList.remove('recording'); };
       recognition.start();
@@ -1160,7 +1220,19 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
         return formatArticleOutput(text);
       }
 
-      return text
+      // Auto-detect formal content and add PDF button if substantial
+      const wordCount = text.split(/\s+/).length;
+      const hasFormalContent = wordCount > 150 && (
+        text.includes('theorem') || text.includes('Theorem') ||
+        text.includes('proof') || text.includes('Proof') ||
+        text.includes('lemma') || text.includes('Lemma') ||
+        text.includes('Abstract') || text.includes('abstract') ||
+        text.includes('Introduction') || text.includes('Conclusion') ||
+        text.includes('\\begin') || text.includes('definizione') ||
+        text.includes('dimostrazione') || text.includes('Dimostrazione')
+      );
+
+      let formatted = text
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.*?)\*/g, '<em>$1</em>')
         .replace(/^### (.*?)$/gm, '<h3>$1</h3>')
@@ -1169,6 +1241,16 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
         .replace(/`([^`]+)`/g, '<code>$1</code>')
         .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
         .replace(/\n/g, '<br>');
+
+      if (hasFormalContent) {
+        const readableId = 'readable_auto_' + Date.now();
+        formatted = `<div class="article-readable" id="${readableId}">${formatted}</div>
+          <div class="article-actions">
+            <button class="action-btn primary" onclick="savePDF(this)" data-target="${readableId}">📥 Salva PDF</button>
+          </div>`;
+      }
+
+      return formatted;
     }
 
     function formatArticleOutput(text) {
@@ -1209,12 +1291,13 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
           .replace(/^# (.*?)$/gm, '<h1>$1</h1>')
           .replace(/\n/g, '<br>');
 
+        const readableId = 'readable_' + Date.now();
         html += `
           <div style="margin-top:14px;">
             <div style="font-size:12px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">📄 Versione leggibile</div>
-            <div class="article-readable" id="articleReadable">${readableFormatted}</div>
+            <div class="article-readable" id="${readableId}">${readableFormatted}</div>
             <div class="article-actions">
-              <button class="action-btn primary" onclick="savePDF()">📥 Salva PDF</button>
+              <button class="action-btn primary" onclick="savePDF(this)" data-target="${readableId}">📥 Salva PDF</button>
             </div>
           </div>`;
       }
@@ -1268,12 +1351,29 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
       document.body.removeChild(form);
     }
 
-    function savePDF() {
-      const readable = document.getElementById('articleReadable');
-      if (!readable) return;
+    function savePDF(btnEl) {
+      // Find the closest article readable div
+      let readable = null;
+      if (btnEl) {
+        const targetId = btnEl.getAttribute('data-target');
+        if (targetId) readable = document.getElementById(targetId);
+        if (!readable) {
+          const wrapper = btnEl.closest('.message-content') || btnEl.closest('.message-wrapper');
+          if (wrapper) readable = wrapper.querySelector('.article-readable');
+        }
+      }
+      if (!readable) readable = document.getElementById('articleReadable');
+      if (!readable) {
+        // Try to find any article-readable on page
+        const all = document.querySelectorAll('.article-readable, [id="articleReadable"]');
+        if (all.length > 0) readable = all[all.length - 1];
+      }
+      if (!readable) {
+        alert('Nessun documento leggibile trovato. Chiedi a Benoît di produrre la versione leggibile prima di salvare il PDF.');
+        return;
+      }
       const printWindow = window.open('', '_blank');
-      printWindow.document.write(`
-        <!DOCTYPE html><html><head>
+      printWindow.document.write(`<!DOCTYPE html><html><head>
         <meta charset="UTF-8">
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
         <style>
@@ -1282,11 +1382,18 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
           h2 { font-size: 13pt; font-weight: bold; margin-top: 20px; text-transform: uppercase; letter-spacing: 0.05em; }
           h3 { font-size: 12pt; font-weight: bold; margin-top: 14px; }
           .katex { font-size: 11pt; }
+          hr { border: none; border-top: 1px solid #ccc; margin: 20px 0; page-break-after: always; }
+          .slide-block { page-break-after: always; min-height: 60vh; padding: 20px 0; }
+          @media print {
+            body { margin: 20px; }
+            @page { size: A4 landscape; margin: 1.5cm; }
+            hr { page-break-after: always; }
+          }
         </style>
         </head><body>${readable.innerHTML}</body></html>`);
       printWindow.document.close();
       printWindow.focus();
-      setTimeout(() => { printWindow.print(); printWindow.close(); }, 800);
+      setTimeout(() => { printWindow.print(); }, 1000);
     }
 
     // ── Add message ──
