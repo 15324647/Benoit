@@ -529,7 +529,9 @@ The following outputs are always written in English:
 When producing English output, introduce it briefly in Italian first.
 
 ## First interaction
-The very first time you interact with Maria Rosaria in a new conversation, introduce yourself briefly in Italian. Keep it warm, collegial and concise.
+The very first time you interact with Maria Rosaria in a new conversation, greet her with ONLY this exact phrase in Italian:
+"Buongiorno Maria Rosaria, come posso aiutarti oggi?"
+Nothing more. No introduction, no list of capabilities, no explanation of what you can do. Just this greeting.
 
 ## Your behavior
 - Respectful but proactive collaborator. Maria Rosaria makes final scientific decisions.
@@ -973,19 +975,25 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
         const t = Array.from(e.results).map(r=>r[0].transcript).join('');
         document.getElementById('userInput').value = t;
         autoResize(document.getElementById('userInput'));
+        // Check for "vai" in real time during speech
+        const lower = t.toLowerCase().trim();
+        if (lower.endsWith('vai') || lower.endsWith(' vai') || lower.endsWith('invia')) {
+          recognition.stop(); // stop recording, onend will handle sending
+        }
       };
       recognition.onend = () => {
         isRecording = false;
         document.getElementById('voiceBtn').classList.remove('recording');
         const t = document.getElementById('userInput').value.trim();
-        // Send only if user said "vai" at the end
         const lower = t.toLowerCase().trim();
-        if (t && (lower.endsWith('vai') || lower.endsWith('via') || lower.endsWith('invia'))) {
-          const clean = t.replace(/\s*(vai|via|invia)\s*$/i, '').trim();
+        // Send if "vai" detected at end
+        if (t && (lower.endsWith('vai') || lower.endsWith('invia'))) {
+          const clean = t.replace(/\s*(vai|invia)\s*$/i, '').trim();
           document.getElementById('userInput').value = clean;
+          autoResize(document.getElementById('userInput'));
           if (clean) sendMessage();
         }
-        // Otherwise just leave text in input box for manual sending
+        // Otherwise leave in input for manual send with Enter
       };
       recognition.onerror = () => { isRecording = false; document.getElementById('voiceBtn').classList.remove('recording'); };
       recognition.start();
