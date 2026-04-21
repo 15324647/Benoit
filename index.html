@@ -311,7 +311,7 @@
     <div class="sidebar-left">
       <div class="sidebar-section-title">Modalità</div>
       <button class="sidebar-btn" onclick="continuaLavoro()">
-        <span class="sb-icon">↩️</span><span><span class="sb-label">Continua lavoro</span><span class="sb-desc">Ultimo progetto</span></span>
+        <span class="sb-icon">↩️</span><span><span class="sb-label">Continua a lavorare</span><span class="sb-desc">Riprendi ultimo lavoro</span></span>
       </button>
       <button class="sidebar-btn" onclick="quickStart('Benoît, vorrei fare una peer review.')">
         <span class="sb-icon">📝</span><span><span class="sb-label">Peer Review</span><span class="sb-desc">Valuta un articolo</span></span>
@@ -323,12 +323,20 @@
         <span class="sb-icon">🎯</span><span><span class="sb-label">Slide Beamer</span><span class="sb-desc">LaTeX per conferenze</span></span>
       </button>
       <div class="sidebar-divider"></div>
+      <div class="sidebar-section-title">Output rapidi</div>
+      <button class="sidebar-btn" onclick="quickStart('Benoît, produci la versione leggibile del documento e il PDF.')">
+        <span class="sb-icon">📥</span><span><span class="sb-label">Articolo → PDF</span><span class="sb-desc">Versione leggibile</span></span>
+      </button>
+      <button class="sidebar-btn" onclick="quickStart('Benoît, produci il codice LaTeX completo del documento.')">
+        <span class="sb-icon">💻</span><span><span class="sb-label">Articolo → LaTeX</span><span class="sb-desc">Codice compilabile</span></span>
+      </button>
+      <div class="sidebar-divider"></div>
       <div class="sidebar-section-title">Ricerca</div>
       <button class="sidebar-btn" onclick="quickStart('Benoît, cerca paper recenti su forme di Dirichlet e frattali.')">
         <span class="sb-icon">🔬</span><span><span class="sb-label">Letteratura</span><span class="sb-desc">Paper recenti</span></span>
       </button>
-      <button class="sidebar-btn" onclick="quickStart('Benoît, suggerisci nuove direzioni di ricerca partendo dai miei lavori pubblicati.')">
-        <span class="sb-icon">💡</span><span><span class="sb-label">Idee nuove</span><span class="sb-desc">Sviluppi possibili</span></span>
+      <button class="sidebar-btn" onclick="avviaNuovaIdea()">
+        <span class="sb-icon">💡</span><span><span class="sb-label">Idee nuove</span><span class="sb-desc">Nuovo progetto di ricerca</span></span>
       </button>
       <button class="sidebar-btn" onclick="quickStart('Benoît, aiutami a scrivere la bozza di un articolo scientifico.')">
         <span class="sb-icon">✍️</span><span><span class="sb-label">Articolo</span><span class="sb-desc">Bozza completa</span></span>
@@ -395,7 +403,7 @@
             </svg>
           </button>
         </div>
-        <div class="input-hint">📎 Carica PDF &nbsp;·&nbsp; 🎙️ Microfono per italiano &nbsp;·&nbsp; LaTeX: $f(x)$ oppure $$\int_a^b f\,dx$$</div>
+        <div class="input-hint">📎 Repository &nbsp;·&nbsp; 🎙️ Dì "vai" per inviare &nbsp;·&nbsp; Trascina file sulla chat</div>
       </div>
     </div>
 
@@ -567,6 +575,9 @@ Mark it clearly with: [CODICE LATEX]
 All mathematical expressions must be written in LaTeX: \\begin{theorem}, \\begin{proof}, \\begin{lemma}, etc.
 
 ---
+
+## LaTeX synchronization
+When Maria Rosaria asks to modify the LaTeX code of a document already produced, ALWAYS automatically update and re-produce the [VERSIONE LEGGIBILE] as well, without waiting to be asked. Both versions must always be kept in sync.
 
 ## PEER REVIEW MODE
 When Maria Rosaria provides a manuscript to review, activate Peer Review Mode.
@@ -767,17 +778,67 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
         const sb = getSupabase();
         if (sb) {
           try {
-            const timestamp = Date.now();
-            const fileName = `${timestamp}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+            // Save in "Caricati" folder with clean name (no timestamp prefix)
+            const cleanName = file.name.replace(/[^a-zA-Z0-9._\-\s]/g, '_');
+            const folderPath = `Caricati/${cleanName}`;
             const arrayBuffer = await file.arrayBuffer();
-            const { error } = await sb.storage.from('paper').upload(fileName, arrayBuffer, {
-              contentType: file.type || 'application/pdf', upsert: false
+            const { error } = await sb.storage.from('paper').upload(folderPath, arrayBuffer, {
+              contentType: file.type || 'application/pdf', upsert: true
             });
             if (error) console.error('Storage upload error:', error);
+            else console.log('File saved to Supabase Storage: Caricati/' + cleanName);
           } catch(e) { console.error('Upload error:', e); }
         }
       }
     }
+
+    // ── Nuova idea con progetto ──
+    async function avviaNuovaIdea() {
+      const welcome = document.getElementById('welcome');
+      if (welcome) welcome.remove();
+      if (!currentConversationId) await createConversation('idea', 'Nuova idea di ricerca');
+      addMessage('benoit', 'Buongiorno Professoressa, su cosa di nuovo vogliamo iniziare a lavorare? Creiamo subito un progetto?', false);
+      conversationHistory.push({
+        role: 'assistant',
+        content: 'Buongiorno Professoressa, su cosa di nuovo vogliamo iniziare a lavorare? Creiamo subito un progetto?'
+      });
+
+      // Listen for "sì" response and auto-ask project name
+      const originalSend = window._originalSendHook;
+      window._waitingForProjectConfirm = true;
+    }
+
+    // Hook to intercept "sì" after avviaNuovaIdea
+    async function sendMessage() {
+      if (!apiKey) { document.getElementById('apiModal').style.display='flex'; return; }
+      const input = document.getElementById('userInput');
+      const text = input.value.trim();
+      if (!text || isLoading) return;
+
+      // Check if waiting for project confirmation
+      if (window._waitingForProjectConfirm) {
+        window._waitingForProjectConfirm = false;
+        const lower = text.toLowerCase();
+        if (lower.includes('sì') || lower.includes('si') || lower.includes('yes') || lower.includes('certo') || lower.includes('ok')) {
+          input.value = '';
+          const projName = prompt('Come si chiama il nuovo progetto?', 'Nuovo progetto di ricerca');
+          if (projName) {
+            await saveProject(projName, 'article', '', '');
+            addMessage('user', text);
+            conversationHistory.push({role:'user', content:text});
+            const confirmMsg = `Perfetto! Ho creato il progetto "${projName}". Lo trovi nella sidebar destra — ci ritornerai quando vuoi. Dimmi pure di cosa vuoi occuparti.`;
+            addMessage('benoit', confirmMsg);
+            conversationHistory.push({role:'assistant', content:confirmMsg});
+          }
+          return;
+        }
+      }
+
+      await _sendMessage(text, input);
+    }
+
+    async function _sendMessage(text, input) {
+    } // end _sendMessage
 
     async function continuaLavoro() {
       if (!getSupabase()) { alert('Database non disponibile.'); return; }
@@ -829,7 +890,7 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
         <h2>Benoît è pronto</h2>
         <p>Collaboratore di ricerca in analisi matematica, frattali,<br>forme di Dirichlet e PDE su domini irregolari.</p>
         <div class="modes">
-          <div class="mode-card" onclick="quickStart('Benoît, presentati.')"><span class="mode-icon">🤝</span><div class="mode-title">Presentazione</div><div class="mode-desc">Conosci Benoît e le sue capacità</div></div>
+          <div class="mode-card" onclick="continuaLavoro()"><span class="mode-icon">↩️</span><div class="mode-title">Continua a lavorare</div><div class="mode-desc">Riprendi dall'ultimo progetto aperto</div></div>
           <div class="mode-card" onclick="quickStart('Benoît, vorrei fare una peer review.')"><span class="mode-icon">📝</span><div class="mode-title">Peer Review</div><div class="mode-desc">Valutazione articoli per riviste</div></div>
           <div class="mode-card" onclick="quickStart('Benoît, prepara la newsletter.')"><span class="mode-icon">📰</span><div class="mode-title">Newsletter</div><div class="mode-desc">Aggiornamenti per il gruppo di ricerca</div></div>
           <div class="mode-card" onclick="quickStart('Benoît, devo preparare delle slide per una conferenza.')"><span class="mode-icon">🎯</span><div class="mode-title">Slide Beamer</div><div class="mode-desc">Presentazioni LaTeX per conferenze</div></div>
@@ -861,8 +922,24 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
       recognition = new SR();
       recognition.lang = 'it-IT'; recognition.continuous = false; recognition.interimResults = true;
       recognition.onstart = () => { isRecording = true; document.getElementById('voiceBtn').classList.add('recording'); };
-      recognition.onresult = e => { const t = Array.from(e.results).map(r=>r[0].transcript).join(''); document.getElementById('userInput').value = t; autoResize(document.getElementById('userInput')); };
-      recognition.onend = () => { isRecording = false; document.getElementById('voiceBtn').classList.remove('recording'); const t = document.getElementById('userInput').value.trim(); if(t) sendMessage(); };
+      recognition.onresult = e => {
+        const t = Array.from(e.results).map(r=>r[0].transcript).join('');
+        document.getElementById('userInput').value = t;
+        autoResize(document.getElementById('userInput'));
+      };
+      recognition.onend = () => {
+        isRecording = false;
+        document.getElementById('voiceBtn').classList.remove('recording');
+        const t = document.getElementById('userInput').value.trim();
+        // Send only if user said "vai" at the end
+        const lower = t.toLowerCase().trim();
+        if (t && (lower.endsWith('vai') || lower.endsWith('via') || lower.endsWith('invia'))) {
+          const clean = t.replace(/\s*(vai|via|invia)\s*$/i, '').trim();
+          document.getElementById('userInput').value = clean;
+          if (clean) sendMessage();
+        }
+        // Otherwise just leave text in input box for manual sending
+      };
       recognition.onerror = () => { isRecording = false; document.getElementById('voiceBtn').classList.remove('recording'); };
       recognition.start();
     }
@@ -1116,8 +1193,24 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
 
     function openOverleaf(btn) {
       const latex = decodeURIComponent(btn.getAttribute('data-latex'));
-      const encoded = encodeURIComponent(latex);
-      window.open(`https://www.overleaf.com/docs?snip_uri=data:application/x-tex;charset=utf-8,${encoded}`, '_blank');
+      // Use Overleaf's official snip API
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = 'https://www.overleaf.com/docs';
+      form.target = '_blank';
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'snip';
+      input.value = latex;
+      const type_input = document.createElement('input');
+      type_input.type = 'hidden';
+      type_input.name = 'snip_type';
+      type_input.value = 'main.tex';
+      form.appendChild(input);
+      form.appendChild(type_input);
+      document.body.appendChild(form);
+      form.submit();
+      document.body.removeChild(form);
     }
 
     function savePDF() {
@@ -1184,58 +1277,7 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
     function removeTypingIndicator() { const t=document.getElementById('typing'); if(t) t.remove(); }
 
     // ── API call ──
-    async function sendMessage() {
-      if (!apiKey) { document.getElementById('apiModal').style.display='flex'; return; }
-      const input = document.getElementById('userInput');
-      const text = input.value.trim();
-      if (!text || isLoading) return;
-      input.value = ''; input.style.height = 'auto';
-      isLoading = true; document.getElementById('sendBtn').disabled = true;
-      if (!currentConversationId) await createConversation('chat', text.substring(0,50));
 
-      // Build message content — text + optional file
-      let userContent;
-      if (attachedFile) {
-        try {
-          const b64 = await fileToBase64(attachedFile);
-          const mediaType = attachedFile.type || 'application/pdf';
-          userContent = [
-            { type: 'document', source: { type: 'base64', media_type: mediaType, data: b64 } },
-            { type: 'text', text: text || 'Analizza questo documento.' }
-          ];
-          addMessage('user', `📎 ${attachedFile.name}
-${text || 'Analizza questo documento.'}`);
-          removeAttachment();
-        } catch(e) {
-          userContent = text;
-          addMessage('user', text);
-        }
-      } else {
-        userContent = text;
-        addMessage('user', text);
-      }
-
-      conversationHistory.push({role:'user', content:userContent});
-      addTypingIndicator();
-      try {
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: {'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-          body: JSON.stringify({model:'claude-sonnet-4-5', max_tokens:4096, system:SYSTEM_PROMPT, messages:conversationHistory}),
-        });
-        if (!response.ok) { const err=await response.json(); throw new Error(err.error?.message||`Errore API: ${response.status}`); }
-        const data = await response.json();
-        const reply = data.content[0].text;
-        removeTypingIndicator();
-        addMessage('benoit', reply);
-        conversationHistory.push({role:'assistant', content:reply});
-      } catch(err) {
-        removeTypingIndicator();
-        addMessage('benoit', `⚠️ Errore di connessione: ${err.message}. Verifica la API Key e riprova.`);
-      } finally {
-        isLoading = false; document.getElementById('sendBtn').disabled = false; input.focus();
-      }
-    }
   </script>
 </body>
 </html>
