@@ -403,7 +403,7 @@
             </svg>
           </button>
         </div>
-        <div class="input-hint">📎 Repository &nbsp;·&nbsp; 🎙️ Dì "vai" per inviare &nbsp;·&nbsp; Trascina file sulla chat</div>
+        <div class="input-hint">📎 Repository &nbsp;·&nbsp; 🎙️ Detti e premi Invio per inviare &nbsp;·&nbsp; Trascina file sulla chat</div>
       </div>
     </div>
 
@@ -1036,24 +1036,17 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
       recognition = new SR();
       recognition.lang = 'it-IT'; recognition.continuous = false; recognition.interimResults = true;
       recognition.onstart = () => { isRecording = true; document.getElementById('voiceBtn').classList.add('recording'); };
-      let silenceTimer = null;
-
       recognition.onresult = e => {
+        // Transcribe speech into input box — do NOT send automatically
         const t = Array.from(e.results).map(r=>r[0].transcript).join('');
         document.getElementById('userInput').value = t;
         autoResize(document.getElementById('userInput'));
-        // Reset silence timer on every new speech result
-        if (silenceTimer) clearTimeout(silenceTimer);
-        silenceTimer = setTimeout(() => {
-          if (isRecording) recognition.stop();
-        }, 2000);
       };
       recognition.onend = () => {
         isRecording = false;
-        if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null; }
         document.getElementById('voiceBtn').classList.remove('recording');
-        const t = document.getElementById('userInput').value.trim();
-        if (t) sendMessage();
+        // Just leave text in input — Rosaria reads and presses Enter when ready
+        document.getElementById('userInput').focus();
       };
       recognition.onerror = () => { isRecording = false; document.getElementById('voiceBtn').classList.remove('recording'); };
       recognition.start();
