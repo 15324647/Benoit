@@ -323,14 +323,6 @@
         <span class="sb-icon">🎯</span><span><span class="sb-label">Slide Beamer</span><span class="sb-desc">LaTeX per conferenze</span></span>
       </button>
       <div class="sidebar-divider"></div>
-      <div class="sidebar-section-title">Output rapidi</div>
-      <button class="sidebar-btn" onclick="quickStart('Benoît, produci la versione leggibile del documento e il PDF.')">
-        <span class="sb-icon">📥</span><span><span class="sb-label">Articolo → PDF</span><span class="sb-desc">Versione leggibile</span></span>
-      </button>
-      <button class="sidebar-btn" onclick="quickStart('Benoît, produci il codice LaTeX completo del documento.')">
-        <span class="sb-icon">💻</span><span><span class="sb-label">Articolo → LaTeX</span><span class="sb-desc">Codice compilabile</span></span>
-      </button>
-      <div class="sidebar-divider"></div>
       <div class="sidebar-section-title">Ricerca</div>
       <button class="sidebar-btn" onclick="avviaRicercaLetteratura()">
         <span class="sb-icon">🔬</span><span><span class="sb-label">Letteratura</span><span class="sb-desc">Cerca paper per argomento</span></span>
@@ -558,6 +550,11 @@ VERSION 2 — LATEX CODE (produce after):
 Provide the complete compilable LaTeX code for the same document.
 Mark it clearly with: [CODICE LATEX]
 
+CRITICAL — Never omit calculations:
+NEVER abbreviate, summarize or skip any proof step or calculation.
+Write ALL steps in full. Maria Rosaria will decide what to remove.
+NEVER write "by similar arguments", "analogously", "it can be shown".
+
 ## When you take initiative
 - Signal open/unresolved topics in literature
 - Suggest counterexamples or boundary cases
@@ -578,6 +575,11 @@ All mathematical expressions must be written in LaTeX: \\begin{theorem}, \\begin
 
 ---
 
+## CRITICAL — Never omit calculations
+When writing any article, proof, or formal document, include ALL calculations and ALL proof steps in full.
+NEVER write "by similar calculations", "by similar arguments", "analogously", "it can be shown", "the proof follows similarly", or any other shortcut.
+Write every step completely. Maria Rosaria will decide what to remove or shorten — never decide for her.
+
 ## LaTeX synchronization
 When Maria Rosaria asks to modify the LaTeX code of a document already produced, ALWAYS automatically update and re-produce the [VERSIONE LEGGIBILE] as well, without waiting to be asked. Both versions must always be kept in sync.
 
@@ -591,8 +593,11 @@ Structure: 1.Summary 2.Strengths 3.Major concerns (precise location+passage+expl
 
 ## NEWSLETTER MODE
 Newsletter in Italian. Audience: Maria Rosaria and research group.
-Frequency: monthly or since last. First: covers previous 1.5 months.
-Ask first: first newsletter?, specific topics?, specific events?
+Frequency: monthly or since last newsletter requested.
+- First newsletter: covers exactly the previous 1.5 months from today's date
+- Subsequent: covers from date of last newsletter to today
+- NEVER include articles outside this time window — no older articles
+Ask first: first newsletter or not? If not first, what date was the last one? Any specific topics or events?
 
 ALWAYS start newsletter with: "⚠️ Nota: Non ho accesso a MathSciNet, Scopus e Web of Science in quanto richiedono abbonamento. La ricerca è limitata ad arXiv e Semantic Scholar."
 
