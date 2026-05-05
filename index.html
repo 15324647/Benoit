@@ -938,14 +938,43 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
         const response = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: {'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-          body: JSON.stringify({model:'claude-sonnet-4-5', max_tokens:4096, system:SYSTEM_PROMPT, messages:conversationHistory}),
+          body: JSON.stringify({model:'claude-sonnet-4-5', max_tokens:8192, system:SYSTEM_PROMPT, messages:conversationHistory}),
         });
         if (!response.ok) { const err=await response.json(); throw new Error(err.error?.message||`Errore API: ${response.status}`); }
         const data = await response.json();
         const reply = data.content[0].text;
+        const stopReason = data.stop_reason;
         removeTypingIndicator();
         addMessage('benoit', reply);
         conversationHistory.push({role:'assistant', content:reply});
+
+        // Auto-continuation if response was cut off
+        if (stopReason === 'max_tokens') {
+          setTimeout(async () => {
+            const continueMsg = { role: 'user', content: 'Continua.' };
+            conversationHistory.push(continueMsg);
+            addTypingIndicator();
+            try {
+              const contResp = await fetch('https://api.anthropic.com/v1/messages', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+                body: JSON.stringify({model:'claude-sonnet-4-5', max_tokens:8192, system:SYSTEM_PROMPT, messages:conversationHistory}),
+              });
+              if (contResp.ok) {
+                const contData = await contResp.json();
+                const contReply = contData.content[0].text;
+                removeTypingIndicator();
+                addMessage('benoit', contReply);
+                conversationHistory.push({role:'assistant', content:contReply});
+              } else {
+                removeTypingIndicator();
+              }
+            } catch(e) {
+              removeTypingIndicator();
+              console.error('Auto-continuation error:', e);
+            }
+          }, 500);
+        }
       } catch(err) {
         removeTypingIndicator();
         addMessage('benoit', `⚠️ Errore di connessione: ${err.message}. Verifica la API Key e riprova.`);
@@ -1408,15 +1437,25 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
       scrollToBottom();
       addToSessionLog(role, content);
       if (save !== false) saveMessage(role === 'benoit' ? 'assistant' : 'user', content);
-      setTimeout(() => {
-        const el = wrapper.querySelector('.message-content');
-        if (window.renderMathInElement) {
+      function renderKaTeX(el) {
+        if (!window.renderMathInElement || !el) return;
+        try {
           renderMathInElement(el, {
-            delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false},{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}],
-            throwOnError: false
+            delimiters: [
+              {left:'$$',right:'$$',display:true},
+              {left:'$',right:'$',display:false},
+              {left:'\\[',right:'\\]',display:true},
+              {left:'\\(',right:'\\)',display:false}
+            ],
+            throwOnError: false,
+            strict: false
           });
-        }
-      }, 150);
+        } catch(e) { console.warn('KaTeX error:', e); }
+      }
+      const msgEl = wrapper.querySelector('.message-content');
+      setTimeout(() => renderKaTeX(msgEl), 100);
+      setTimeout(() => renderKaTeX(msgEl), 600);
+      setTimeout(() => renderKaTeX(msgEl), 1500);
     }
 
     function addTypingIndicator() {
