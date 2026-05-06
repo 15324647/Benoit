@@ -767,18 +767,25 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
       renderRepoFiles(filtered);
     }
 
-    async function selectRepoFile(fileName) {
+    async function selectRepoFile(filePath) {
       closeRepo();
       const sb = getSupabase();
       if (!sb) return;
       try {
-        const { data, error } = await sb.storage.from('paper').download(fileName);
-        if (error) throw error;
-        const file = new File([data], fileName, { type: data.type });
+        // filePath may include folder, e.g. "2023/articolo.pdf"
+        console.log('Downloading:', filePath);
+        const { data, error } = await sb.storage.from('paper').download(filePath);
+        if (error) {
+          console.error('Download error:', error);
+          throw error;
+        }
+        // Use only the filename (last part of path) for display
+        const displayName = filePath.split('/').pop();
+        const file = new File([data], displayName, { type: data.type || 'application/pdf' });
         await processFile(file, false); // false = don't re-upload to Supabase
       } catch(e) {
         console.error('Error downloading file:', e);
-        alert('Errore nel caricamento del file dalla repository.');
+        alert('Errore nel caricamento del file: ' + e.message);
       }
     }
 
