@@ -757,7 +757,7 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
         const item = document.createElement('div');
         item.className = 'repo-item';
         item.innerHTML = `<span class="ri-icon">${icon}</span><span class="ri-name">${f.name}</span><span class="ri-size">${size}</span>`;
-        item.addEventListener('click', () => selectRepoFile(f.path));
+        item.addEventListener('click', () => { console.log('Clicking file, path:', f.path, 'name:', f.name, 'folder:', f.folder); selectRepoFile(f.path); });
         list.appendChild(item);
       });
     }
