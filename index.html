@@ -773,8 +773,10 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
       if (!sb) return;
       try {
         // filePath may include folder, e.g. "2023/articolo.pdf"
-        console.log('Downloading:', filePath);
-        const { data, error } = await sb.storage.from('paper').download(filePath);
+        // Decode any URL encoding and re-encode properly
+        const cleanPath = decodeURIComponent(filePath);
+        console.log('Downloading:', cleanPath);
+        const { data, error } = await sb.storage.from('paper').download(cleanPath);
         if (error) {
           console.error('Download error:', error);
           throw error;
