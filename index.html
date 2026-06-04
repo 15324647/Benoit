@@ -250,15 +250,18 @@
       font-weight: 600; transition: all 0.2s; flex-shrink: 0;
     }
     .token-warning .tw-btn:hover { background: #f59e0b; color: white; }
+    .token-warning.critical { background: #fef2f2; border-color: #ef4444; }
+    .token-warning.critical .tw-text { color: #991b1b; }
+    .token-warning.critical .tw-btn { border-color: #ef4444; background: #fee2e2; color: #991b1b; }
+    .token-warning.critical .tw-btn:hover { background: #ef4444; color: white; }
 
-    /* Summary action buttons in sidebar */
+    /* Summary section in sidebar */
     .summary-section { margin-top: 8px; border-top: 1px solid var(--sidebar-border); padding-top: 8px; }
-    .summary-section-title { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; padding: 4px 6px 6px; }
-    .sidebar-action-btn.summary-btn { background: rgba(26,107,150,0.06); border-color: rgba(26,107,150,0.2); color: var(--accent2); }
+    .sidebar-action-btn.summary-btn { background: rgba(26,107,150,0.06); border-color: rgba(26,107,150,0.25); color: var(--accent2); font-weight: 600; }
     .sidebar-action-btn.summary-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
     .sidebar-action-btn.new-chat-btn { background: rgba(34,197,94,0.06); border-color: rgba(34,197,94,0.3); color: #166534; }
     .sidebar-action-btn.new-chat-btn:hover { background: #16a34a; color: white; border-color: #16a34a; }
-    .sidebar-action-btn.new-chat-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .sidebar-action-btn:disabled { opacity: 0.38; cursor: not-allowed !important; pointer-events: none; }
 
     /* Print styles for PDF */
     @media print {
@@ -433,11 +436,11 @@
       <div style="margin-top:auto;">
         <div class="sidebar-divider"></div>
         <div class="summary-section">
-          <div class="summary-section-title">📋 Gestione contesto</div>
-          <button class="sidebar-action-btn summary-btn" id="summarizeBtn" onclick="generaRiassunto()" title="Benoît genera un riassunto dettagliato della chat">
+          <div class="sidebar-section-title">📋 Contesto</div>
+          <button class="sidebar-action-btn summary-btn" id="summarizeBtn" onclick="generaRiassunto()">
             📋 Riassumi chat
           </button>
-          <button class="sidebar-action-btn new-chat-btn" id="newChatWithSummaryBtn" onclick="nuovaChatConRiassunto()" disabled title="Apre nuova chat incollando il riassunto">
+          <button class="sidebar-action-btn new-chat-btn" id="newChatBtn" onclick="nuovaChatConRiassunto()" disabled>
             🔄 Nuova chat + riassunto
           </button>
         </div>
@@ -995,8 +998,7 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
         removeTypingIndicator();
         addMessage('benoit', reply);
         conversationHistory.push({role:'assistant', content:reply});
-
-        // Check token count after each response
+        // Controlla lunghezza contesto dopo ogni risposta
         checkTokenWarning();
 
         // Auto-continuation if response was cut off
@@ -1521,169 +1523,159 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
 
     function removeTypingIndicator() { const t=document.getElementById('typing'); if(t) t.remove(); }
 
-    // ── Token management ──
-    const TOKEN_WARNING_THRESHOLD = 140000; // warn at ~140k tokens
-    const TOKEN_CRITICAL_THRESHOLD = 160000; // critical at ~160k
-    let lastTokenWarningShown = false;
-    let generatedSummary = null; // stores the last generated summary
+    // ── Token management & Summary ──
+    const TOKEN_WARN = 140000;   // avviso a ~140k token stimati
+    const TOKEN_CRIT = 160000;   // critico a ~160k
+    let _lastWarnLevel = 0;      // 0=nessuno 1=avviso 2=critico
+    let _generatedSummary = null; // riassunto prodotto
 
-    function estimateTokens(messages) {
-      // Rough estimate: 1 token ≈ 4 chars for Italian/English mixed
-      let totalChars = 0;
-      for (const msg of messages) {
-        if (typeof msg.content === 'string') {
-          totalChars += msg.content.length;
-        } else if (Array.isArray(msg.content)) {
-          for (const part of msg.content) {
-            if (part.type === 'text') totalChars += part.text.length;
-            else if (part.type === 'document') totalChars += 5000; // estimate for PDF
+    function _estimateTokens() {
+      let chars = 0;
+      for (const m of conversationHistory) {
+        if (typeof m.content === 'string') chars += m.content.length;
+        else if (Array.isArray(m.content)) {
+          for (const p of m.content) {
+            if (p.type === 'text') chars += p.text.length;
+            else if (p.type === 'document') chars += 8000; // stima PDF
           }
         }
       }
-      return Math.round(totalChars / 4);
+      return Math.round(chars / 4);
     }
 
     function checkTokenWarning() {
-      const estimated = estimateTokens(conversationHistory);
-      const messagesEl = document.getElementById('messages');
+      const tok = _estimateTokens();
+      const isCrit = tok >= TOKEN_CRIT;
+      const isWarn = tok >= TOKEN_WARN;
+      const level  = isCrit ? 2 : isWarn ? 1 : 0;
 
-      // Remove existing warning
-      const existing = document.getElementById('tokenWarningBanner');
-      if (existing) existing.remove();
+      // rimuovi banner precedente
+      const old = document.getElementById('tokenWarningBanner');
+      if (old) old.remove();
 
-      if (estimated >= TOKEN_WARNING_THRESHOLD) {
-        lastTokenWarningShown = true;
-        const pct = Math.min(100, Math.round((estimated / TOKEN_CRITICAL_THRESHOLD) * 100));
-        const isCritical = estimated >= TOKEN_CRITICAL_THRESHOLD;
+      if (level === 0) { _lastWarnLevel = 0; return; }
+      if (level === _lastWarnLevel) return; // già mostrato
+      _lastWarnLevel = level;
 
-        const banner = document.createElement('div');
-        banner.id = 'tokenWarningBanner';
-        banner.className = 'token-warning';
-        banner.style.borderColor = isCritical ? '#ef4444' : '#f59e0b';
-        banner.style.background = isCritical ? '#fef2f2' : '#fffbeb';
-        banner.innerHTML = `
-          <div class="tw-icon">${isCritical ? '🔴' : '⚠️'}</div>
-          <div class="tw-text">
-            <strong>${isCritical ? 'Contesto quasi pieno' : 'Contesto lungo'}:</strong>
-            la chat ha circa <strong>${(estimated/1000).toFixed(0)}k token</strong> (~${pct}% del limite).
-            ${isCritical ? 'È necessario fare un riassunto per continuare.' : 'Consiglio di fare un riassunto presto.'}
-          </div>
-          <button class="tw-btn" onclick="generaRiassunto()">📋 Riassumi ora</button>
-        `;
+      const kTok = (tok / 1000).toFixed(0);
+      const pct  = Math.min(100, Math.round((tok / TOKEN_CRIT) * 100));
+      const msg  = isCrit
+        ? `Contesto quasi pieno: ~${kTok}k token (${pct}%). <strong>È necessario fare un riassunto per continuare.</strong>`
+        : `Conversazione lunga: ~${kTok}k token (${pct}%). Ti consiglio di fare un riassunto presto.`;
 
-        // Insert at top of messages area
-        const firstChild = messagesEl.firstChild;
-        messagesEl.insertBefore(banner, firstChild);
+      const banner = document.createElement('div');
+      banner.id = 'tokenWarningBanner';
+      banner.className = 'token-warning' + (isCrit ? ' critical' : '');
+      banner.innerHTML = `
+        <div class="tw-icon">${isCrit ? '🔴' : '⚠️'}</div>
+        <div class="tw-text">${msg}</div>
+        <button class="tw-btn" onclick="generaRiassunto()">📋 Riassumi ora</button>`;
 
-        // Also enable the sidebar button
-        const btn = document.getElementById('summarizeBtn');
-        if (btn) { btn.style.background = '#fef3c7'; btn.style.borderColor = '#f59e0b'; }
-      }
-
-      return estimated;
+      const msgs = document.getElementById('messages');
+      msgs.insertBefore(banner, msgs.firstChild);
     }
 
     async function generaRiassunto() {
-      if (!apiKey) { document.getElementById('apiModal').style.display='flex'; return; }
-      if (conversationHistory.length === 0) {
-        alert('Nessuna conversazione da riassumere.'); return;
-      }
+      if (!apiKey) { document.getElementById('apiModal').style.display = 'flex'; return; }
+      if (conversationHistory.length === 0) { alert('Nessuna conversazione da riassumere.'); return; }
 
-      // Disable button during generation
       const btn = document.getElementById('summarizeBtn');
-      if (btn) { btn.disabled = true; btn.textContent = '⏳ Generando...'; }
+      if (btn) { btn.disabled = true; btn.textContent = '⏳ Generando…'; }
 
       addTypingIndicator();
 
-      const summaryPrompt = `Sei Benoît, collaboratore di ricerca di Maria Rosaria Lancia.
-Genera un RIASSUNTO STRUTTURATO E DETTAGLIATO di questa intera conversazione.
-Il riassunto deve essere completo e autonomo: chi legge solo il riassunto deve capire tutto il lavoro svolto.
+      const SUMMARY_SYSTEM = `Sei Benoît, collaboratore di ricerca di Maria Rosaria Lancia (Sapienza, Analisi Matematica).
+Genera un RIASSUNTO STRUTTURATO E DETTAGLIATO dell'intera conversazione.
+Il riassunto deve essere completo e autonomo: chi legge SOLO il riassunto deve capire tutto il lavoro svolto e poter continuare esattamente da dove ci si è fermati.
 
-Struttura obbligatoria:
+Usa questa struttura (includi solo le sezioni pertinenti):
 
 ## 📌 CONTESTO E OBIETTIVO
-[Descrivi il progetto/lavoro, chi è coinvolto, qual è l'obiettivo finale]
+[Progetto, persone coinvolte, obiettivo finale]
 
 ## 🔬 ARGOMENTI SCIENTIFICI TRATTATI
-[Lista dettagliata degli argomenti matematici/scientifici discussi, con tutte le ipotesi, i teoremi, le dimostrazioni, i metodi numerici menzionati]
+[Argomenti matematici/scientifici, ipotesi, teoremi, metodi, dettagli tecnici]
 
-## 📊 RISULTATI E CONCLUSIONI RAGGIUNTE
-[Cosa è stato stabilito, dimostrato, concordato — con formule/risultati importanti se presenti]
+## 📊 RISULTATI E CONCLUSIONI
+[Cosa è stato stabilito, dimostrato, concordato — includi formule importanti]
 
 ## ✍️ STATO DEL MANOSCRITTO/LAVORO
-[Struttura concordata dell'articolo/presentazione, sezioni scritte, sezioni da scrivere, bozze prodotte]
+[Struttura concordata, sezioni scritte, sezioni da scrivere, bozze prodotte]
 
-## 📚 RIFERIMENTI BIBLIOGRAFICI DISCUSSI
-[Lista di tutti i riferimenti citati o discussi, con autori e contesto d'uso]
+## 📚 RIFERIMENTI BIBLIOGRAFICI
+[Tutti i riferimenti citati o discussi]
 
 ## 🗂️ DATI E PARAMETRI CHIAVE
-[Tutti i dati numerici, parametri, costanti, condizioni al contorno menzionati]
+[Dati numerici, parametri, costanti, condizioni al contorno]
 
 ## ✅ DECISIONI PRESE
-[Lista di tutte le scelte metodologiche, stilistiche, strutturali concordate]
+[Scelte metodologiche, stilistiche, strutturali concordate]
 
 ## 🎯 PROSSIMI PASSI
 [Cosa resta da fare, in ordine di priorità]
 
 ## 💬 NOTE AGGIUNTIVE
-[Qualsiasi altra informazione importante per continuare il lavoro]
+[Qualsiasi altra informazione utile per continuare]
 
-IMPORTANTE: Sii preciso e dettagliato. Non omettere nulla di rilevante per la ricerca. Scrivi in italiano.`;
+Sii PRECISO e DETTAGLIATO. Non omettere nulla di rilevante. Scrivi in italiano.`;
 
       try {
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
+        const resp = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
-          headers: {'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true'
+          },
           body: JSON.stringify({
             model: 'claude-sonnet-4-5',
             max_tokens: 8192,
-            system: summaryPrompt,
+            system: SUMMARY_SYSTEM,
             messages: conversationHistory
           })
         });
-
-        if (!response.ok) { const err = await response.json(); throw new Error(err.error?.message || 'Errore API'); }
-        const data = await response.json();
+        if (!resp.ok) { const e = await resp.json(); throw new Error(e.error?.message || 'Errore API'); }
+        const data = await resp.json();
         const summary = data.content[0].text;
 
         removeTypingIndicator();
+        _generatedSummary = summary;
 
-        // Store summary
-        generatedSummary = summary;
-
-        // Show summary as a special message
+        // Mostra il riassunto in chat con bordo speciale
         const welcome = document.getElementById('welcome');
         if (welcome) welcome.remove();
         const wrapper = document.createElement('div');
         wrapper.className = 'message-wrapper benoit';
-        wrapper.style.cssText = 'border: 2px solid var(--accent); border-radius: 12px; padding: 4px;';
+        wrapper.style.cssText = 'outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 12px;';
         wrapper.innerHTML = `
           <div class="message-header">
             <div class="msg-avatar benoit">❄️</div>
-            <span class="msg-name benoit">Benoît — Riassunto Chat</span>
+            <span class="msg-name benoit">Benoît — 📋 Riassunto Chat</span>
             <span class="msg-time">${formatTime(new Date())}</span>
           </div>
-          <div class="message-content" style="border-color: var(--accent);">${formatMessage(summary)}</div>
+          <div class="message-content" style="border-color:rgba(26,107,150,0.4);">${formatMessage(summary)}</div>
           <div class="article-actions" style="margin-top:10px;">
-            <button class="action-btn primary" onclick="copiaSummaryNeClipboard()">📋 Copia riassunto</button>
-            <button class="action-btn" onclick="nuovaChatConRiassunto()">🔄 Nuova chat con questo riassunto</button>
+            <button class="action-btn primary" onclick="_copiaSummary(this)">📋 Copia riassunto</button>
+            <button class="action-btn" onclick="nuovaChatConRiassunto()">🔄 Nuova chat con riassunto</button>
           </div>`;
         document.getElementById('messages').appendChild(wrapper);
         scrollToBottom();
 
-        // Save summary in conversation history so Benoît remembers it
-        conversationHistory.push({role: 'assistant', content: '**[RIASSUNTO AUTOMATICO DELLA SESSIONE]**\n\n' + summary});
-        saveMessage('assistant', '**[RIASSUNTO AUTOMATICO DELLA SESSIONE]**\n\n' + summary);
+        // Salva nel history così Benoît ricorda
+        conversationHistory.push({ role: 'assistant', content: '[RIASSUNTO SESSIONE]\n\n' + summary });
+        saveMessage('assistant', '[RIASSUNTO SESSIONE]\n\n' + summary);
 
-        // Enable new chat button
-        const newChatBtn = document.getElementById('newChatWithSummaryBtn');
-        if (newChatBtn) newChatBtn.disabled = false;
+        // Abilita pulsante nuova chat
+        const nb = document.getElementById('newChatBtn');
+        if (nb) nb.disabled = false;
 
-        // Remove token warning since we have a summary now
-        const warning = document.getElementById('tokenWarningBanner');
-        if (warning) warning.remove();
+        // Rimuovi banner warning
+        const bw = document.getElementById('tokenWarningBanner');
+        if (bw) bw.remove();
+        _lastWarnLevel = 0;
 
-      } catch(err) {
+      } catch (err) {
         removeTypingIndicator();
         addMessage('benoit', `⚠️ Errore nella generazione del riassunto: ${err.message}`);
       } finally {
@@ -1691,10 +1683,9 @@ IMPORTANTE: Sii preciso e dettagliato. Non omettere nulla di rilevante per la ri
       }
     }
 
-    function copiaSummaryNeClipboard() {
-      if (!generatedSummary) return;
-      navigator.clipboard.writeText(generatedSummary).then(() => {
-        const btn = event.target;
+    function _copiaSummary(btn) {
+      if (!_generatedSummary) return;
+      navigator.clipboard.writeText(_generatedSummary).then(() => {
         const orig = btn.innerHTML;
         btn.innerHTML = '✅ Copiato!';
         setTimeout(() => btn.innerHTML = orig, 2000);
@@ -1702,47 +1693,37 @@ IMPORTANTE: Sii preciso e dettagliato. Non omettere nulla di rilevante per la ri
     }
 
     async function nuovaChatConRiassunto() {
-      if (!generatedSummary) {
+      if (!_generatedSummary) {
         alert('Prima genera un riassunto cliccando "📋 Riassumi chat".');
         return;
       }
 
-      // Store summary in sessionStorage so new session can pick it up
-      try {
-        sessionStorage.setItem('benoit_pending_summary', generatedSummary);
-      } catch(e) { console.warn('sessionStorage not available'); }
+      const summaryToCarry = _generatedSummary;
 
-      // Copy to clipboard as backup
-      try { await navigator.clipboard.writeText(generatedSummary); } catch(e) {}
+      // Copia negli appunti come backup
+      try { await navigator.clipboard.writeText(summaryToCarry); } catch(e) {}
 
-      // Start new session and inject summary as first message
+      // Vai alla home (nuova sessione)
       goHome();
 
-      // Short delay then inject summary
+      // Dopo un tick, inietta il riassunto come contesto iniziale
       setTimeout(() => {
-        const introMsg = `**Continuazione dalla sessione precedente.**
+        const contextMsg = `Continuo dalla sessione precedente. Ho ricevuto il seguente riassunto completo del lavoro svolto finora — tienilo in memoria per poter continuare esattamente da dove ci siamo fermati:\n\n${summaryToCarry}\n\n---\n*Fine riassunto. Dimmi da dove vuoi riprendere.*`;
 
-Di seguito il riassunto completo del lavoro svolto finora. Tienitelo in memoria per poter continuare esattamente da dove ci eravamo fermati.
+        // Messaggio utente (visivo)
+        addMessage('user', '📋 **[Riassunto sessione precedente — incollato automaticamente]**', false);
+        // Messaggio utente nel history (il vero contenuto)
+        conversationHistory.push({ role: 'user', content: contextMsg });
 
-${generatedSummary}
+        // Benoît conferma
+        const ack = 'Ho ricevuto il riassunto completo della sessione precedente e ho tutto il contesto necessario per continuare. Dimmi pure da dove vuoi riprendere.';
+        addMessage('benoit', ack, false);
+        conversationHistory.push({ role: 'assistant', content: ack });
 
----
-*Fine riassunto. Puoi ora continuare a lavorare come se avessi seguito tutta la conversazione precedente.*`;
-
-        // Add as user message (so Benoît receives context)
-        addMessage('user', '📋 **[RIASSUNTO SESSIONE PRECEDENTE — incollato automaticamente]**', false);
-        conversationHistory.push({role: 'user', content: introMsg});
-
-        // Benoît acknowledges
-        const ackMsg = 'Ho ricevuto il riassunto completo della sessione precedente. Ho tutto il contesto necessario per continuare il lavoro. Dimmi pure da dove vuoi riprendere.';
-        addMessage('benoit', ackMsg, false);
-        conversationHistory.push({role: 'assistant', content: ackMsg});
-
-        // Reset summary state
-        generatedSummary = null;
-        const newChatBtn = document.getElementById('newChatWithSummaryBtn');
-        if (newChatBtn) newChatBtn.disabled = true;
-
+        // Reset stato
+        _generatedSummary = null;
+        const nb = document.getElementById('newChatBtn');
+        if (nb) nb.disabled = true;
       }, 300);
     }
 
