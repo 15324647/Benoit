@@ -243,7 +243,7 @@
       display: flex; align-items: center; gap: 10px; animation: fadeIn 0.3s ease;
     }
     .token-warning .tw-icon { font-size: 18px; flex-shrink: 0; }
-    .token-warning .tw-text { flex: 1; font-size: 13px; color: #92400e; line-height: 1.4; }
+    .token-warning .tw-text { flex: 1; font-size: 13px; color: #92400e; line-height: 1.5; }
     .token-warning .tw-btn {
       padding: 5px 12px; border-radius: 6px; border: 1px solid #f59e0b;
       background: #fef3c7; color: #92400e; cursor: pointer; font-size: 12px;
@@ -254,14 +254,13 @@
     .token-warning.critical .tw-text { color: #991b1b; }
     .token-warning.critical .tw-btn { border-color: #ef4444; background: #fee2e2; color: #991b1b; }
     .token-warning.critical .tw-btn:hover { background: #ef4444; color: white; }
-
     /* Summary section in sidebar */
     .summary-section { margin-top: 8px; border-top: 1px solid var(--sidebar-border); padding-top: 8px; }
-    .sidebar-action-btn.summary-btn { background: rgba(26,107,150,0.06); border-color: rgba(26,107,150,0.25); color: var(--accent2); font-weight: 600; }
+    .sidebar-action-btn.summary-btn { background: rgba(26,107,150,0.07); border-color: rgba(26,107,150,0.25); color: var(--accent2); font-weight: 600; }
     .sidebar-action-btn.summary-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
-    .sidebar-action-btn.new-chat-btn { background: rgba(34,197,94,0.06); border-color: rgba(34,197,94,0.3); color: #166534; }
+    .sidebar-action-btn.new-chat-btn { background: rgba(34,197,94,0.07); border-color: rgba(34,197,94,0.3); color: #166534; }
     .sidebar-action-btn.new-chat-btn:hover { background: #16a34a; color: white; border-color: #16a34a; }
-    .sidebar-action-btn:disabled { opacity: 0.38; cursor: not-allowed !important; pointer-events: none; }
+    .sidebar-action-btn[disabled] { opacity: 0.38; cursor: not-allowed; pointer-events: none; }
 
     /* Print styles for PDF */
     @media print {
@@ -436,13 +435,9 @@
       <div style="margin-top:auto;">
         <div class="sidebar-divider"></div>
         <div class="summary-section">
-          <div class="sidebar-section-title">📋 Contesto</div>
-          <button class="sidebar-action-btn summary-btn" id="summarizeBtn" onclick="generaRiassunto()">
-            📋 Riassumi chat
-          </button>
-          <button class="sidebar-action-btn new-chat-btn" id="newChatBtn" onclick="nuovaChatConRiassunto()" disabled>
-            🔄 Nuova chat + riassunto
-          </button>
+          <div class="sidebar-section-title">📋 Contesto chat</div>
+          <button class="sidebar-action-btn summary-btn" id="summarizeBtn" onclick="generaRiassunto()">📋 Riassumi chat</button>
+          <button class="sidebar-action-btn new-chat-btn" id="newChatBtn" onclick="nuovaChatConRiassunto()" disabled>🔄 Nuova chat + riassunto</button>
         </div>
         <div class="sidebar-divider"></div>
         <div class="sidebar-section-title">Impostazioni</div>
@@ -998,6 +993,7 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
         removeTypingIndicator();
         addMessage('benoit', reply);
         conversationHistory.push({role:'assistant', content:reply});
+
         // Controlla lunghezza contesto dopo ogni risposta
         checkTokenWarning();
 
@@ -1030,7 +1026,19 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
         }
       } catch(err) {
         removeTypingIndicator();
-        addMessage('benoit', `⚠️ Errore di connessione: ${err.message}. Verifica la API Key e riprova.`);
+
+        // ── Gestione specifica: contesto troppo lungo ──
+        if (err.message && err.message.includes('prompt is too long')) {
+          // Mostra messaggio di emergenza
+          addMessage('benoit', `🔴 **Contesto pieno** — la chat ha superato il limite di 200.000 token e non posso più rispondere normalmente.\n\nSto generando automaticamente un riassunto della sessione per permetterti di continuare in una nuova chat...`);
+          // Tronca la storia tenendo solo system + ultimi 20 scambi (sicuro per il riassunto)
+          const safeHistory = conversationHistory.slice(-40);
+          conversationHistory = safeHistory;
+          // Genera riassunto automatico
+          setTimeout(() => generaRiassunto(), 800);
+        } else {
+          addMessage('benoit', `⚠️ Errore di connessione: ${err.message}. Verifica la API Key e riprova.`);
+        }
       } finally {
         isLoading = false; document.getElementById('sendBtn').disabled = false; input.focus();
       }
@@ -1523,11 +1531,11 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
 
     function removeTypingIndicator() { const t=document.getElementById('typing'); if(t) t.remove(); }
 
-    // ── Token management & Summary ──
-    const TOKEN_WARN = 140000;   // avviso a ~140k token stimati
-    const TOKEN_CRIT = 160000;   // critico a ~160k
-    let _lastWarnLevel = 0;      // 0=nessuno 1=avviso 2=critico
-    let _generatedSummary = null; // riassunto prodotto
+    // ── Gestione token e riassunto ──
+    const TOKEN_WARN = 140000;
+    const TOKEN_CRIT = 160000;
+    let _lastWarnLevel = 0;
+    let _generatedSummary = null;
 
     function _estimateTokens() {
       let chars = 0;
@@ -1536,7 +1544,7 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
         else if (Array.isArray(m.content)) {
           for (const p of m.content) {
             if (p.type === 'text') chars += p.text.length;
-            else if (p.type === 'document') chars += 8000; // stima PDF
+            else if (p.type === 'document') chars += 8000;
           }
         }
       }
@@ -1548,97 +1556,63 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
       const isCrit = tok >= TOKEN_CRIT;
       const isWarn = tok >= TOKEN_WARN;
       const level  = isCrit ? 2 : isWarn ? 1 : 0;
-
-      // rimuovi banner precedente
       const old = document.getElementById('tokenWarningBanner');
       if (old) old.remove();
-
       if (level === 0) { _lastWarnLevel = 0; return; }
-      if (level === _lastWarnLevel) return; // già mostrato
+      if (level === _lastWarnLevel) return;
       _lastWarnLevel = level;
-
       const kTok = (tok / 1000).toFixed(0);
       const pct  = Math.min(100, Math.round((tok / TOKEN_CRIT) * 100));
       const msg  = isCrit
-        ? `Contesto quasi pieno: ~${kTok}k token (${pct}%). <strong>È necessario fare un riassunto per continuare.</strong>`
+        ? `<strong>Contesto pieno: ~${kTok}k token (${pct}%).</strong> Fai subito un riassunto per poter continuare.`
         : `Conversazione lunga: ~${kTok}k token (${pct}%). Ti consiglio di fare un riassunto presto.`;
-
       const banner = document.createElement('div');
       banner.id = 'tokenWarningBanner';
       banner.className = 'token-warning' + (isCrit ? ' critical' : '');
-      banner.innerHTML = `
-        <div class="tw-icon">${isCrit ? '🔴' : '⚠️'}</div>
-        <div class="tw-text">${msg}</div>
-        <button class="tw-btn" onclick="generaRiassunto()">📋 Riassumi ora</button>`;
-
+      banner.innerHTML = `<div class="tw-icon">${isCrit ? '🔴' : '⚠️'}</div><div class="tw-text">${msg}</div><button class="tw-btn" onclick="generaRiassunto()">📋 Riassumi ora</button>`;
       const msgs = document.getElementById('messages');
       msgs.insertBefore(banner, msgs.firstChild);
     }
 
     async function generaRiassunto() {
       if (!apiKey) { document.getElementById('apiModal').style.display = 'flex'; return; }
-      if (conversationHistory.length === 0) { alert('Nessuna conversazione da riassumere.'); return; }
+      // Usa gli ultimi 40 messaggi per il riassunto (sicuro anche quando history è enorme)
+      const historyPerRiassunto = conversationHistory.length > 40
+        ? conversationHistory.slice(-40)
+        : conversationHistory;
+      if (historyPerRiassunto.length === 0) { alert('Nessuna conversazione da riassumere.'); return; }
 
       const btn = document.getElementById('summarizeBtn');
       if (btn) { btn.disabled = true; btn.textContent = '⏳ Generando…'; }
-
       addTypingIndicator();
 
       const SUMMARY_SYSTEM = `Sei Benoît, collaboratore di ricerca di Maria Rosaria Lancia (Sapienza, Analisi Matematica).
-Genera un RIASSUNTO STRUTTURATO E DETTAGLIATO dell'intera conversazione.
-Il riassunto deve essere completo e autonomo: chi legge SOLO il riassunto deve capire tutto il lavoro svolto e poter continuare esattamente da dove ci si è fermati.
+Genera un RIASSUNTO STRUTTURATO E DETTAGLIATO della conversazione.
+Il riassunto deve essere completo e autonomo: chi legge SOLO il riassunto deve capire tutto il lavoro svolto e poter continuare da dove ci si è fermati.
 
-Usa questa struttura (includi solo le sezioni pertinenti):
+Struttura (includi solo le sezioni pertinenti):
 
 ## 📌 CONTESTO E OBIETTIVO
-[Progetto, persone coinvolte, obiettivo finale]
-
 ## 🔬 ARGOMENTI SCIENTIFICI TRATTATI
-[Argomenti matematici/scientifici, ipotesi, teoremi, metodi, dettagli tecnici]
-
 ## 📊 RISULTATI E CONCLUSIONI
-[Cosa è stato stabilito, dimostrato, concordato — includi formule importanti]
-
 ## ✍️ STATO DEL MANOSCRITTO/LAVORO
-[Struttura concordata, sezioni scritte, sezioni da scrivere, bozze prodotte]
-
 ## 📚 RIFERIMENTI BIBLIOGRAFICI
-[Tutti i riferimenti citati o discussi]
-
 ## 🗂️ DATI E PARAMETRI CHIAVE
-[Dati numerici, parametri, costanti, condizioni al contorno]
-
 ## ✅ DECISIONI PRESE
-[Scelte metodologiche, stilistiche, strutturali concordate]
-
 ## 🎯 PROSSIMI PASSI
-[Cosa resta da fare, in ordine di priorità]
-
 ## 💬 NOTE AGGIUNTIVE
-[Qualsiasi altra informazione utile per continuare]
 
-Sii PRECISO e DETTAGLIATO. Non omettere nulla di rilevante. Scrivi in italiano.`;
+Sii PRECISO e DETTAGLIATO. Scrivi in italiano.`;
 
       try {
         const resp = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': apiKey,
-            'anthropic-version': '2023-06-01',
-            'anthropic-dangerous-direct-browser-access': 'true'
-          },
-          body: JSON.stringify({
-            model: 'claude-sonnet-4-5',
-            max_tokens: 8192,
-            system: SUMMARY_SYSTEM,
-            messages: conversationHistory
-          })
+          headers: {'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+          body: JSON.stringify({ model:'claude-sonnet-4-5', max_tokens:8192, system:SUMMARY_SYSTEM, messages:historyPerRiassunto })
         });
         if (!resp.ok) { const e = await resp.json(); throw new Error(e.error?.message || 'Errore API'); }
         const data = await resp.json();
         const summary = data.content[0].text;
-
         removeTypingIndicator();
         _generatedSummary = summary;
 
@@ -1662,14 +1636,18 @@ Sii PRECISO e DETTAGLIATO. Non omettere nulla di rilevante. Scrivi in italiano.`
         document.getElementById('messages').appendChild(wrapper);
         scrollToBottom();
 
-        // Salva nel history così Benoît ricorda
-        conversationHistory.push({ role: 'assistant', content: '[RIASSUNTO SESSIONE]\n\n' + summary });
-        saveMessage('assistant', '[RIASSUNTO SESSIONE]\n\n' + summary);
+        // Sostituisce tutta la history con: riassunto come unico contesto
+        // Così la chat riparte leggera ma Benoît ha tutto il contesto
+        conversationHistory = [
+          { role: 'user', content: '[RIASSUNTO SESSIONE PRECEDENTE]\n\n' + summary + '\n\n---\nHo generato questo riassunto perché la sessione precedente era molto lunga. Tienilo in memoria per continuare il lavoro.' },
+          { role: 'assistant', content: 'Ho ricevuto e memorizzato il riassunto completo della sessione. Posso ora continuare il lavoro. Dimmi pure come procedere.' }
+        ];
+        saveMessage('user', '[RIASSUNTO SESSIONE]\n\n' + summary);
+        saveMessage('assistant', 'Ho ricevuto e memorizzato il riassunto completo della sessione. Posso ora continuare il lavoro. Dimmi pure come procedere.');
 
         // Abilita pulsante nuova chat
         const nb = document.getElementById('newChatBtn');
         if (nb) nb.disabled = false;
-
         // Rimuovi banner warning
         const bw = document.getElementById('tokenWarningBanner');
         if (bw) bw.remove();
@@ -1693,34 +1671,17 @@ Sii PRECISO e DETTAGLIATO. Non omettere nulla di rilevante. Scrivi in italiano.`
     }
 
     async function nuovaChatConRiassunto() {
-      if (!_generatedSummary) {
-        alert('Prima genera un riassunto cliccando "📋 Riassumi chat".');
-        return;
-      }
-
+      if (!_generatedSummary) { alert('Prima genera un riassunto cliccando "📋 Riassumi chat".'); return; }
       const summaryToCarry = _generatedSummary;
-
-      // Copia negli appunti come backup
       try { await navigator.clipboard.writeText(summaryToCarry); } catch(e) {}
-
-      // Vai alla home (nuova sessione)
       goHome();
-
-      // Dopo un tick, inietta il riassunto come contesto iniziale
       setTimeout(() => {
-        const contextMsg = `Continuo dalla sessione precedente. Ho ricevuto il seguente riassunto completo del lavoro svolto finora — tienilo in memoria per poter continuare esattamente da dove ci siamo fermati:\n\n${summaryToCarry}\n\n---\n*Fine riassunto. Dimmi da dove vuoi riprendere.*`;
-
-        // Messaggio utente (visivo)
-        addMessage('user', '📋 **[Riassunto sessione precedente — incollato automaticamente]**', false);
-        // Messaggio utente nel history (il vero contenuto)
+        const contextMsg = `Continuo dalla sessione precedente. Di seguito il riassunto completo del lavoro svolto finora — tienilo in memoria per continuare esattamente da dove ci siamo fermati:\n\n${summaryToCarry}\n\n---\n*Fine riassunto.*`;
+        addMessage('user', '📋 **[Riassunto sessione precedente — caricato automaticamente]**', false);
         conversationHistory.push({ role: 'user', content: contextMsg });
-
-        // Benoît conferma
-        const ack = 'Ho ricevuto il riassunto completo della sessione precedente e ho tutto il contesto necessario per continuare. Dimmi pure da dove vuoi riprendere.';
+        const ack = 'Ho ricevuto il riassunto completo e ho tutto il contesto per continuare. Dimmi da dove vuoi riprendere.';
         addMessage('benoit', ack, false);
         conversationHistory.push({ role: 'assistant', content: ack });
-
-        // Reset stato
         _generatedSummary = null;
         const nb = document.getElementById('newChatBtn');
         if (nb) nb.disabled = true;
