@@ -246,7 +246,6 @@
     .token-warning.critical .tw-text { color:#991b1b; }
     .token-warning.critical .tw-btn { border-color:#ef4444; background:#fee2e2; color:#991b1b; }
     .token-warning.critical .tw-btn:hover { background:#ef4444; color:white; }
-    /* Summary section */
     .summary-section { margin-top:8px; border-top:1px solid var(--sidebar-border); padding-top:8px; }
     .sidebar-action-btn.summary-btn { background:rgba(26,107,150,0.07); border-color:rgba(26,107,150,0.25); color:var(--accent2); font-weight:600; }
     .sidebar-action-btn.summary-btn:hover { background:var(--accent); color:white; border-color:var(--accent); }
@@ -1017,7 +1016,7 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
       } catch(err) {
         removeTypingIndicator();
         if (err.message && err.message.includes('prompt is too long')) {
-          // Contesto pieno: tronca silenziosamente e genera riassunto automatico
+          // Contesto pieno: taglia e genera riassunto automatico senza mostrare nulla
           conversationHistory = conversationHistory.slice(-40);
           setTimeout(() => generaRiassunto(), 400);
         } else {
@@ -1560,27 +1559,23 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
     const SUMMARY_SYSTEM = `Sei Benoît, collaboratore di ricerca di Maria Rosaria Lancia (Sapienza, Analisi Matematica).
 Genera un RIASSUNTO STRUTTURATO E DETTAGLIATO della conversazione.
 Il riassunto deve essere completo e autonomo: chi legge solo il riassunto deve capire tutto il lavoro svolto e poter continuare esattamente da dove ci si è fermati.
-
-Struttura (includi solo le sezioni pertinenti al contenuto effettivo):
-
+Includi TUTTO: formule, teoremi, dimostrazioni parziali, decisioni, riferimenti bibliografici, dati numerici, struttura del manoscritto.
+Scrivi in italiano. Usa queste sezioni (solo quelle pertinenti):
 ## 📌 CONTESTO E OBIETTIVO
 ## 🔬 ARGOMENTI SCIENTIFICI TRATTATI
 ## 📊 RISULTATI E CONCLUSIONI
-## ✍️ STATO DEL MANOSCRITTO/LAVORO
+## ✍️ STATO DEL MANOSCRITTO
 ## 📚 RIFERIMENTI BIBLIOGRAFICI
 ## 🗂️ DATI E PARAMETRI CHIAVE
 ## ✅ DECISIONI PRESE
 ## 🎯 PROSSIMI PASSI
-## 💬 NOTE AGGIUNTIVE
-
-Sii PRECISO e DETTAGLIATO. Non omettere nulla di rilevante. Scrivi in italiano.`;
+## 💬 NOTE AGGIUNTIVE`;
 
     async function generaRiassunto() {
       if (!apiKey) { document.getElementById('apiModal').style.display = 'flex'; return; }
-      // Usa sempre solo gli ultimi 40 messaggi per sicurezza (ben sotto il limite)
       const histForSummary = conversationHistory.length > 40
         ? conversationHistory.slice(-40)
-        : conversationHistory;
+        : [...conversationHistory];
       if (histForSummary.length === 0) { alert('Nessuna conversazione da riassumere.'); return; }
 
       const btn = document.getElementById('summarizeBtn');
@@ -1595,11 +1590,11 @@ Sii PRECISO e DETTAGLIATO. Non omettere nulla di rilevante. Scrivi in italiano.`
         });
         if (!resp.ok) { const e = await resp.json(); throw new Error(e.error?.message || 'Errore API'); }
         const data = await resp.json();
-        const summary = data.content[0].text;
+        const summaryText = data.content[0].text;
         removeTypingIndicator();
-        _generatedSummary = summary;
+        _generatedSummary = summaryText;
 
-        // Mostra riassunto in chat con bordo speciale
+        // Mostra il riassunto in chat con bordo speciale
         const welcome = document.getElementById('welcome');
         if (welcome) welcome.remove();
         const wrapper = document.createElement('div');
@@ -1611,7 +1606,7 @@ Sii PRECISO e DETTAGLIATO. Non omettere nulla di rilevante. Scrivi in italiano.`
             <span class="msg-name benoit">Benoît — 📋 Riassunto Chat</span>
             <span class="msg-time">${formatTime(new Date())}</span>
           </div>
-          <div class="message-content" style="border-color:rgba(26,107,150,0.4);">${formatMessage(summary)}</div>
+          <div class="message-content" style="border-color:rgba(26,107,150,0.4);">${formatMessage(summaryText)}</div>
           <div class="article-actions" style="margin-top:10px;">
             <button class="action-btn primary" onclick="_copiaSummary(this)">📋 Copia riassunto</button>
             <button class="action-btn" onclick="nuovaChatConRiassunto()">🔄 Nuova chat con riassunto</button>
@@ -1619,14 +1614,25 @@ Sii PRECISO e DETTAGLIATO. Non omettere nulla di rilevante. Scrivi in italiano.`
         document.getElementById('messages').appendChild(wrapper);
         scrollToBottom();
 
-        // Sostituisce l'intera history con il solo riassunto come contesto
-        // → la chat ora è leggera e Benoît può rispondere normalmente
+        // ── PUNTO CRITICO ──
+        // Rimpiazza TUTTA la history con il riassunto reale come contesto.
+        // Benoît riceve il testo vero del riassunto, non un placeholder.
+        const contextMessage = `Ho letto e memorizzato tutto il lavoro della sessione precedente.
+Ecco il riassunto completo di ciò che abbiamo fatto:
+
+${summaryText}
+
+---
+Questo riassunto contiene tutto il contesto necessario per continuare il lavoro esattamente da dove ci eravamo fermati. Posso rispondere a qualsiasi domanda sul lavoro precedente e continuare a svilupparlo.`;
+
         conversationHistory = [
-          { role: 'user', content: '[RIASSUNTO SESSIONE PRECEDENTE]\n\n' + summary + '\n\n---\nQuesto riassunto è stato generato automaticamente perché la sessione era molto lunga. Hai tutto il contesto per continuare.' },
-          { role: 'assistant', content: 'Ho ricevuto e memorizzato il riassunto della sessione. Posso continuare il lavoro. Dimmi pure da dove vuoi riprendere.' }
+          { role: 'user',      content: contextMessage },
+          { role: 'assistant', content: 'Ho ricevuto e memorizzato il riassunto completo della sessione. Ho tutto il contesto — i paper, le dimostrazioni, i risultati, le decisioni prese. Posso continuare il lavoro. Dimmi da dove vuoi riprendere.' }
         ];
-        saveMessage('user', '[RIASSUNTO SESSIONE]\n\n' + summary);
-        saveMessage('assistant', 'Ho ricevuto e memorizzato il riassunto della sessione. Posso continuare il lavoro. Dimmi pure da dove vuoi riprendere.');
+
+        // Salva nel DB
+        saveMessage('user', contextMessage);
+        saveMessage('assistant', 'Ho ricevuto e memorizzato il riassunto completo della sessione. Ho tutto il contesto — i paper, le dimostrazioni, i risultati, le decisioni prese. Posso continuare il lavoro. Dimmi da dove vuoi riprendere.');
 
         // Abilita pulsante nuova chat, rimuovi banner
         const nb = document.getElementById('newChatBtn');
@@ -1658,10 +1664,16 @@ Sii PRECISO e DETTAGLIATO. Non omettere nulla di rilevante. Scrivi in italiano.`
       try { await navigator.clipboard.writeText(summaryToCarry); } catch(e) {}
       goHome();
       setTimeout(() => {
-        const contextMsg = `Continuo dalla sessione precedente. Di seguito il riassunto completo del lavoro svolto — tienilo in memoria per continuare esattamente da dove ci siamo fermati:\n\n${summaryToCarry}\n\n---\n*Fine riassunto.*`;
+        // Inietta il riassunto reale come contesto nella nuova chat
+        const contextMsg = `Continuo dalla sessione precedente. Di seguito il riassunto completo di tutto il lavoro svolto — hai tutto il contesto per continuare esattamente da dove ci siamo fermati:
+
+${summaryToCarry}
+
+---
+Fine riassunto. Ora possiamo continuare.`;
         addMessage('user', '📋 **[Riassunto sessione precedente — caricato automaticamente]**', false);
         conversationHistory.push({ role: 'user', content: contextMsg });
-        const ack = 'Ho ricevuto il riassunto completo e ho tutto il contesto per continuare. Dimmi da dove vuoi riprendere.';
+        const ack = 'Ho ricevuto il riassunto completo. Ho tutto il contesto della sessione precedente e posso continuare il lavoro. Dimmi da dove vuoi riprendere.';
         addMessage('benoit', ack, false);
         conversationHistory.push({ role: 'assistant', content: ack });
         _generatedSummary = null;
