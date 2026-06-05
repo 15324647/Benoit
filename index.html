@@ -236,23 +236,6 @@
     .modal-btn:hover { background: var(--accent2); }
     .modal-note { font-size: 11px; color: var(--text3); text-align: center; margin-top: 10px; }
 
-    /* Token warning banner */
-    .token-warning { max-width:1100px; margin:0 auto 12px; padding:11px 18px; background:#fffbeb; border:1.5px solid #f59e0b; border-radius:9px; display:flex; align-items:center; gap:10px; animation:fadeIn 0.3s ease; }
-    .token-warning .tw-icon { font-size:18px; flex-shrink:0; }
-    .token-warning .tw-text { flex:1; font-size:13px; color:#92400e; line-height:1.5; }
-    .token-warning .tw-btn { padding:5px 12px; border-radius:6px; border:1px solid #f59e0b; background:#fef3c7; color:#92400e; cursor:pointer; font-size:12px; font-weight:600; transition:all 0.2s; flex-shrink:0; }
-    .token-warning .tw-btn:hover { background:#f59e0b; color:white; }
-    .token-warning.critical { background:#fef2f2; border-color:#ef4444; }
-    .token-warning.critical .tw-text { color:#991b1b; }
-    .token-warning.critical .tw-btn { border-color:#ef4444; background:#fee2e2; color:#991b1b; }
-    .token-warning.critical .tw-btn:hover { background:#ef4444; color:white; }
-    .summary-section { margin-top:8px; border-top:1px solid var(--sidebar-border); padding-top:8px; }
-    .sidebar-action-btn.summary-btn { background:rgba(26,107,150,0.07); border-color:rgba(26,107,150,0.25); color:var(--accent2); font-weight:600; }
-    .sidebar-action-btn.summary-btn:hover { background:var(--accent); color:white; border-color:var(--accent); }
-    .sidebar-action-btn.new-chat-btn { background:rgba(34,197,94,0.07); border-color:rgba(34,197,94,0.3); color:#166534; }
-    .sidebar-action-btn.new-chat-btn:hover { background:#16a34a; color:white; border-color:#16a34a; }
-    .sidebar-action-btn[disabled] { opacity:0.38; cursor:not-allowed; pointer-events:none; }
-
     /* Print styles for PDF */
     @media print {
       header, .sidebar-left, .sidebar-right, .chat-input, .modal-overlay, .message-wrapper.user, .article-actions { display: none !important; }
@@ -424,12 +407,6 @@
       <div class="sidebar-section-title">💬 Sessione corrente</div>
       <div id="sessionLog"><div class="empty-log">La conversazione apparirà qui</div></div>
       <div style="margin-top:auto;">
-        <div class="sidebar-divider"></div>
-        <div class="summary-section">
-          <div class="sidebar-section-title">📋 Contesto chat</div>
-          <button class="sidebar-action-btn summary-btn" id="summarizeBtn" onclick="generaRiassunto()">📋 Riassumi chat</button>
-          <button class="sidebar-action-btn new-chat-btn" id="newChatBtn" onclick="nuovaChatConRiassunto()" disabled>🔄 Nuova chat + riassunto</button>
-        </div>
         <div class="sidebar-divider"></div>
         <div class="sidebar-section-title">Impostazioni</div>
         <button class="sidebar-action-btn" onclick="goHome()">↺ Nuova sessione</button>
@@ -984,6 +961,7 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
         removeTypingIndicator();
         addMessage('benoit', reply);
         conversationHistory.push({role:'assistant', content:reply});
+        // Controlla lunghezza contesto dopo ogni risposta
         checkTokenWarning();
 
         // Auto-continuation if response was cut off
@@ -1016,7 +994,7 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
       } catch(err) {
         removeTypingIndicator();
         if (err.message && err.message.includes('prompt is too long')) {
-          // Contesto pieno: taglia e genera riassunto automatico senza mostrare nulla
+          // Contesto pieno: taglia e genera riassunto automatico silenziosamente
           conversationHistory = conversationHistory.slice(-40);
           setTimeout(() => generaRiassunto(), 400);
         } else {
@@ -1516,7 +1494,7 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
 
     // ── Gestione token e riassunto ──
     const TOKEN_WARN = 140000;
-    const TOKEN_CRIT = 160000;
+    const TOKEN_CRIT = 180000;
     let _lastWarnLevel = 0;
     let _generatedSummary = null;
 
@@ -1546,7 +1524,7 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
       const kTok = (tok / 1000).toFixed(0);
       const pct  = Math.min(100, Math.round((tok / TOKEN_CRIT) * 100));
       const msg  = isCrit
-        ? `<strong>Contesto quasi pieno: ~${kTok}k token (${pct}%).</strong> Fai un riassunto per continuare.`
+        ? `<strong>Contesto quasi pieno: ~${kTok}k token (${pct}%).</strong> Fai un riassunto per continuare in una nuova chat.`
         : `Conversazione lunga: ~${kTok}k token (${pct}%). Conviene fare un riassunto presto.`;
       const banner = document.createElement('div');
       banner.id = 'tokenWarningBanner';
@@ -1614,26 +1592,6 @@ Scrivi in italiano. Usa queste sezioni (solo quelle pertinenti):
         document.getElementById('messages').appendChild(wrapper);
         scrollToBottom();
 
-        // ── PUNTO CRITICO ──
-        // Rimpiazza TUTTA la history con il riassunto reale come contesto.
-        // Benoît riceve il testo vero del riassunto, non un placeholder.
-        const contextMessage = `Ho letto e memorizzato tutto il lavoro della sessione precedente.
-Ecco il riassunto completo di ciò che abbiamo fatto:
-
-${summaryText}
-
----
-Questo riassunto contiene tutto il contesto necessario per continuare il lavoro esattamente da dove ci eravamo fermati. Posso rispondere a qualsiasi domanda sul lavoro precedente e continuare a svilupparlo.`;
-
-        conversationHistory = [
-          { role: 'user',      content: contextMessage },
-          { role: 'assistant', content: 'Ho ricevuto e memorizzato il riassunto completo della sessione. Ho tutto il contesto — i paper, le dimostrazioni, i risultati, le decisioni prese. Posso continuare il lavoro. Dimmi da dove vuoi riprendere.' }
-        ];
-
-        // Salva nel DB
-        saveMessage('user', contextMessage);
-        saveMessage('assistant', 'Ho ricevuto e memorizzato il riassunto completo della sessione. Ho tutto il contesto — i paper, le dimostrazioni, i risultati, le decisioni prese. Posso continuare il lavoro. Dimmi da dove vuoi riprendere.');
-
         // Abilita pulsante nuova chat, rimuovi banner
         const nb = document.getElementById('newChatBtn');
         if (nb) nb.disabled = false;
@@ -1664,8 +1622,8 @@ Questo riassunto contiene tutto il contesto necessario per continuare il lavoro 
       try { await navigator.clipboard.writeText(summaryToCarry); } catch(e) {}
       goHome();
       setTimeout(() => {
-        // Inietta il riassunto reale come contesto nella nuova chat
-        const contextMsg = `Continuo dalla sessione precedente. Di seguito il riassunto completo di tutto il lavoro svolto — hai tutto il contesto per continuare esattamente da dove ci siamo fermati:
+        // Inietta il riassunto come contesto nella nuova chat
+        const contextMsg = `Continuo dalla sessione precedente. Di seguito il riassunto completo di tutto il lavoro svolto — ho tutto il contesto per continuare esattamente da dove ci siamo fermati:
 
 ${summaryToCarry}
 
@@ -1673,7 +1631,7 @@ ${summaryToCarry}
 Fine riassunto. Ora possiamo continuare.`;
         addMessage('user', '📋 **[Riassunto sessione precedente — caricato automaticamente]**', false);
         conversationHistory.push({ role: 'user', content: contextMsg });
-        const ack = 'Ho ricevuto il riassunto completo. Ho tutto il contesto della sessione precedente e posso continuare il lavoro. Dimmi da dove vuoi riprendere.';
+        const ack = 'Ho ricevuto il riassunto completo della sessione precedente. Ho tutto il contesto e posso continuare il lavoro. Dimmi da dove vuoi riprendere.';
         addMessage('benoit', ack, false);
         conversationHistory.push({ role: 'assistant', content: ack });
         _generatedSummary = null;
