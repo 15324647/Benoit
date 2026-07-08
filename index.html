@@ -949,57 +949,38 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
       addTypingIndicator();
 
       try {
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: {'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-          body: JSON.stringify({model:'claude-sonnet-4-5', max_tokens:8192, system:SYSTEM_PROMPT, messages:conversationHistory}),
-        });
-        if (!response.ok) { const err=await response.json(); throw new Error(err.error?.message||`Errore API: ${response.status}`); }
-        const data = await response.json();
-        const reply = data.content[0].text;
-        const stopReason = data.stop_reason;
-        removeTypingIndicator();
-        addMessage('benoit', reply);
-        conversationHistory.push({role:'assistant', content:reply});
-        // Controlla lunghezza contesto dopo ogni risposta
-        checkTokenWarning();
+        let stopReason = null;
+        let continuationCount = 0;
+        const maxContinuations = 5; // safety cap, avoids runaway loops on repeated max_tokens
 
-        // Auto-continuation if response was cut off
-        if (stopReason === 'max_tokens') {
-          setTimeout(async () => {
-            const continueMsg = { role: 'user', content: 'Continua.' };
-            conversationHistory.push(continueMsg);
+        do {
+          if (continuationCount > 0) {
+            conversationHistory.push({
+              role: 'user',
+              content: 'Continua esattamente da dove ti sei fermato, senza ripetere quanto già scritto.'
+            });
             addTypingIndicator();
-            try {
-              const contResp = await fetch('https://api.anthropic.com/v1/messages', {
-                method: 'POST',
-                headers: {'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-                body: JSON.stringify({model:'claude-sonnet-4-5', max_tokens:8192, system:SYSTEM_PROMPT, messages:conversationHistory}),
-              });
-              if (contResp.ok) {
-                const contData = await contResp.json();
-                const contReply = contData.content[0].text;
-                removeTypingIndicator();
-                addMessage('benoit', contReply);
-                conversationHistory.push({role:'assistant', content:contReply});
-              } else {
-                removeTypingIndicator();
-              }
-            } catch(e) {
-              removeTypingIndicator();
-              console.error('Auto-continuation error:', e);
-            }
-          }, 500);
-        }
+          }
+
+          const response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+            body: JSON.stringify({model:'claude-sonnet-5', max_tokens:8192, system:SYSTEM_PROMPT, messages:conversationHistory}),
+          });
+          if (!response.ok) { const err=await response.json(); throw new Error(err.error?.message||`Errore API: ${response.status}`); }
+          const data = await response.json();
+          const reply = data.content[0].text;
+          stopReason = data.stop_reason;
+
+          removeTypingIndicator();
+          addMessage('benoit', reply);
+          conversationHistory.push({role:'assistant', content:reply});
+
+          continuationCount++;
+        } while (stopReason === 'max_tokens' && continuationCount <= maxContinuations);
       } catch(err) {
         removeTypingIndicator();
-        if (err.message && err.message.includes('prompt is too long')) {
-          // Contesto pieno: taglia e genera riassunto automatico silenziosamente
-          conversationHistory = conversationHistory.slice(-40);
-          setTimeout(() => generaRiassunto(), 400);
-        } else {
-          addMessage('benoit', `⚠️ Errore di connessione: ${err.message}. Verifica la API Key e riprova.`);
-        }
+        addMessage('benoit', `⚠️ Errore di connessione: ${err.message}. Verifica la API Key e riprova.`);
       } finally {
         isLoading = false; document.getElementById('sendBtn').disabled = false; input.focus();
       }
@@ -1276,7 +1257,15 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
         text.includes('dimostrazione') || text.includes('Dimostrazione')
       );
 
+      // Escape HTML entities BEFORE any markdown/formatting pass.
+      // Without this, formulas containing < > or & (e.g. "x < 5", "A & B")
+      // corrupt the DOM and KaTeX's auto-render can no longer find the
+      // matching $...$ delimiters, so the raw LaTeX is shown instead of
+      // the rendered formula.
       let formatted = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.*?)\*/g, '<em>$1</em>')
         .replace(/^### (.*?)$/gm, '<h3>$1</h3>')
@@ -1323,12 +1312,14 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
       const introEnd = Math.min(readableIdx !== -1 ? readableIdx : 9999, latexIdx !== -1 ? latexIdx : 9999);
       const intro = text.substring(0, introEnd).trim();
       if (intro) {
-        html += `<p>${intro.replace(/\n/g,'<br>')}</p>`;
+        const introEscaped = intro.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        html += `<p>${introEscaped.replace(/\n/g,'<br>')}</p>`;
       }
 
       // Readable version
       if (readableContent) {
         const readableFormatted = readableContent.trim()
+          .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
           .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
           .replace(/^### (.*?)$/gm, '<h3>$1</h3>')
           .replace(/^## (.*?)$/gm, '<h2>$1</h2>')
@@ -1491,154 +1482,6 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
     }
 
     function removeTypingIndicator() { const t=document.getElementById('typing'); if(t) t.remove(); }
-
-    // ── Gestione token e riassunto ──
-    const TOKEN_WARN = 140000;
-    const TOKEN_CRIT = 180000;
-    let _lastWarnLevel = 0;
-    let _generatedSummary = null;
-
-    function _estimateTokens() {
-      let chars = 0;
-      for (const m of conversationHistory) {
-        if (typeof m.content === 'string') chars += m.content.length;
-        else if (Array.isArray(m.content)) {
-          for (const p of m.content) {
-            if (p.type === 'text') chars += p.text.length;
-            else if (p.type === 'document') chars += 8000;
-          }
-        }
-      }
-      return Math.round(chars / 4);
-    }
-
-    function checkTokenWarning() {
-      const tok = _estimateTokens();
-      const isCrit = tok >= TOKEN_CRIT;
-      const level  = isCrit ? 2 : tok >= TOKEN_WARN ? 1 : 0;
-      const old = document.getElementById('tokenWarningBanner');
-      if (old) old.remove();
-      if (level === 0) { _lastWarnLevel = 0; return; }
-      if (level === _lastWarnLevel) return;
-      _lastWarnLevel = level;
-      const kTok = (tok / 1000).toFixed(0);
-      const pct  = Math.min(100, Math.round((tok / TOKEN_CRIT) * 100));
-      const msg  = isCrit
-        ? `<strong>Contesto quasi pieno: ~${kTok}k token (${pct}%).</strong> Fai un riassunto per continuare in una nuova chat.`
-        : `Conversazione lunga: ~${kTok}k token (${pct}%). Conviene fare un riassunto presto.`;
-      const banner = document.createElement('div');
-      banner.id = 'tokenWarningBanner';
-      banner.className = 'token-warning' + (isCrit ? ' critical' : '');
-      banner.innerHTML = `<div class="tw-icon">${isCrit ? '🔴' : '⚠️'}</div><div class="tw-text">${msg}</div><button class="tw-btn" onclick="generaRiassunto()">📋 Riassumi ora</button>`;
-      const msgs = document.getElementById('messages');
-      msgs.insertBefore(banner, msgs.firstChild);
-    }
-
-    const SUMMARY_SYSTEM = `Sei Benoît, collaboratore di ricerca di Maria Rosaria Lancia (Sapienza, Analisi Matematica).
-Genera un RIASSUNTO STRUTTURATO E DETTAGLIATO della conversazione.
-Il riassunto deve essere completo e autonomo: chi legge solo il riassunto deve capire tutto il lavoro svolto e poter continuare esattamente da dove ci si è fermati.
-Includi TUTTO: formule, teoremi, dimostrazioni parziali, decisioni, riferimenti bibliografici, dati numerici, struttura del manoscritto.
-Scrivi in italiano. Usa queste sezioni (solo quelle pertinenti):
-## 📌 CONTESTO E OBIETTIVO
-## 🔬 ARGOMENTI SCIENTIFICI TRATTATI
-## 📊 RISULTATI E CONCLUSIONI
-## ✍️ STATO DEL MANOSCRITTO
-## 📚 RIFERIMENTI BIBLIOGRAFICI
-## 🗂️ DATI E PARAMETRI CHIAVE
-## ✅ DECISIONI PRESE
-## 🎯 PROSSIMI PASSI
-## 💬 NOTE AGGIUNTIVE`;
-
-    async function generaRiassunto() {
-      if (!apiKey) { document.getElementById('apiModal').style.display = 'flex'; return; }
-      const histForSummary = conversationHistory.length > 40
-        ? conversationHistory.slice(-40)
-        : [...conversationHistory];
-      if (histForSummary.length === 0) { alert('Nessuna conversazione da riassumere.'); return; }
-
-      const btn = document.getElementById('summarizeBtn');
-      if (btn) { btn.disabled = true; btn.textContent = '⏳ Generando…'; }
-      addTypingIndicator();
-
-      try {
-        const resp = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: {'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-          body: JSON.stringify({ model:'claude-sonnet-4-5', max_tokens:8192, system:SUMMARY_SYSTEM, messages:histForSummary })
-        });
-        if (!resp.ok) { const e = await resp.json(); throw new Error(e.error?.message || 'Errore API'); }
-        const data = await resp.json();
-        const summaryText = data.content[0].text;
-        removeTypingIndicator();
-        _generatedSummary = summaryText;
-
-        // Mostra il riassunto in chat con bordo speciale
-        const welcome = document.getElementById('welcome');
-        if (welcome) welcome.remove();
-        const wrapper = document.createElement('div');
-        wrapper.className = 'message-wrapper benoit';
-        wrapper.style.cssText = 'outline:2px solid var(--accent); outline-offset:2px; border-radius:12px;';
-        wrapper.innerHTML = `
-          <div class="message-header">
-            <div class="msg-avatar benoit">❄️</div>
-            <span class="msg-name benoit">Benoît — 📋 Riassunto Chat</span>
-            <span class="msg-time">${formatTime(new Date())}</span>
-          </div>
-          <div class="message-content" style="border-color:rgba(26,107,150,0.4);">${formatMessage(summaryText)}</div>
-          <div class="article-actions" style="margin-top:10px;">
-            <button class="action-btn primary" onclick="_copiaSummary(this)">📋 Copia riassunto</button>
-            <button class="action-btn" onclick="nuovaChatConRiassunto()">🔄 Nuova chat con riassunto</button>
-          </div>`;
-        document.getElementById('messages').appendChild(wrapper);
-        scrollToBottom();
-
-        // Abilita pulsante nuova chat, rimuovi banner
-        const nb = document.getElementById('newChatBtn');
-        if (nb) nb.disabled = false;
-        const bw = document.getElementById('tokenWarningBanner');
-        if (bw) bw.remove();
-        _lastWarnLevel = 0;
-
-      } catch (err) {
-        removeTypingIndicator();
-        addMessage('benoit', `⚠️ Errore nella generazione del riassunto: ${err.message}`);
-      } finally {
-        if (btn) { btn.disabled = false; btn.textContent = '📋 Riassumi chat'; }
-      }
-    }
-
-    function _copiaSummary(btn) {
-      if (!_generatedSummary) return;
-      navigator.clipboard.writeText(_generatedSummary).then(() => {
-        const orig = btn.innerHTML;
-        btn.innerHTML = '✅ Copiato!';
-        setTimeout(() => btn.innerHTML = orig, 2000);
-      });
-    }
-
-    async function nuovaChatConRiassunto() {
-      if (!_generatedSummary) { alert('Prima genera un riassunto cliccando "📋 Riassumi chat".'); return; }
-      const summaryToCarry = _generatedSummary;
-      try { await navigator.clipboard.writeText(summaryToCarry); } catch(e) {}
-      goHome();
-      setTimeout(() => {
-        // Inietta il riassunto come contesto nella nuova chat
-        const contextMsg = `Continuo dalla sessione precedente. Di seguito il riassunto completo di tutto il lavoro svolto — ho tutto il contesto per continuare esattamente da dove ci siamo fermati:
-
-${summaryToCarry}
-
----
-Fine riassunto. Ora possiamo continuare.`;
-        addMessage('user', '📋 **[Riassunto sessione precedente — caricato automaticamente]**', false);
-        conversationHistory.push({ role: 'user', content: contextMsg });
-        const ack = 'Ho ricevuto il riassunto completo della sessione precedente. Ho tutto il contesto e posso continuare il lavoro. Dimmi da dove vuoi riprendere.';
-        addMessage('benoit', ack, false);
-        conversationHistory.push({ role: 'assistant', content: ack });
-        _generatedSummary = null;
-        const nb = document.getElementById('newChatBtn');
-        if (nb) nb.disabled = true;
-      }, 300);
-    }
 
     // ── API call ──
 
