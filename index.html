@@ -969,7 +969,14 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
           });
           if (!response.ok) { const err=await response.json(); throw new Error(err.error?.message||`Errore API: ${response.status}`); }
           const data = await response.json();
-          const reply = data.content[0].text;
+          // Don't assume content[0] is the text block: extended-thinking or
+          // other non-text blocks can appear first, which previously left
+          // `reply` undefined and crashed formatMessage() downstream with
+          // "Cannot read properties of undefined (reading 'includes')".
+          const textBlocks = (data.content || []).filter(b => b && b.type === 'text' && typeof b.text === 'string');
+          const reply = textBlocks.length
+            ? textBlocks.map(b => b.text).join('\n')
+            : '⚠️ Ho ricevuto una risposta senza contenuto testuale. Riprova a inviare il messaggio.';
           stopReason = data.stop_reason;
 
           removeTypingIndicator();
@@ -1237,6 +1244,13 @@ Counts: 15min=10-12, 30min=18-22, 45min=25-30, 60min=35-40.`;
 
     // ── Format message with article detection ──
     function formatMessage(text) {
+      // Defensive guard: never let a non-string value reach .includes()/.replace()
+      // below and crash the chat. This mirrors the fix applied where the API
+      // response is parsed, but protects any other future caller too.
+      if (typeof text !== 'string') {
+        console.error('formatMessage received non-string content:', text);
+        text = '⚠️ Contenuto non disponibile.';
+      }
       // Detect if message contains article markers
       const hasReadable = text.includes('[VERSIONE LEGGIBILE]');
       const hasLatex = text.includes('[CODICE LATEX]');
